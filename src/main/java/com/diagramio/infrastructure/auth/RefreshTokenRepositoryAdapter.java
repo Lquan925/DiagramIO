@@ -21,6 +21,11 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
     }
 
     @Override
+    public Optional<RefreshToken> findByTokenHashWithLock(String tokenHash) {
+        return jpaRepository.findByTokenHashWithLock(tokenHash).map(RefreshTokenEntity::toDomain);
+    }
+
+    @Override
     public RefreshToken save(RefreshToken refreshToken) {
         return jpaRepository.save(RefreshTokenEntity.fromDomain(refreshToken)).toDomain();
     }

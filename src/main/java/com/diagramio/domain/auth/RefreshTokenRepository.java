@@ -7,5 +7,8 @@ public interface RefreshTokenRepository {
 
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
+    /** Đọc refresh token kèm khóa dòng (SELECT ... FOR UPDATE) để đồng bộ các request làm mới đồng thời. */
+    Optional<RefreshToken> findByTokenHashWithLock(String tokenHash);
+
     RefreshToken save(RefreshToken refreshToken);
 }

@@ -84,10 +84,14 @@ class RepositoryAdaptersTest {
 
         refreshTokens.save(token);
         assertThat(refreshTokens.findByTokenHash("a".repeat(64))).contains(token);
+        assertThat(refreshTokens.findByTokenHashWithLock("a".repeat(64))).contains(token);
 
         refreshTokens.save(token.revoke());
         assertThat(refreshTokens.findByTokenHash("a".repeat(64)))
                 .hasValueSatisfying(t -> assertThat(t.revoked()).isTrue());
+        assertThat(refreshTokens.findByTokenHashWithLock("a".repeat(64)))
+                .hasValueSatisfying(t -> assertThat(t.revoked()).isTrue());
         assertThat(refreshTokens.findByTokenHash("b".repeat(64))).isEmpty();
+        assertThat(refreshTokens.findByTokenHashWithLock("b".repeat(64))).isEmpty();
     }
 }

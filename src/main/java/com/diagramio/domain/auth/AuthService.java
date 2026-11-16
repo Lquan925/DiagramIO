@@ -31,12 +31,12 @@ public class AuthService {
     private final Clock clock;
 
     public AuthService(UserRepository userRepository,
-                       RefreshTokenRepository refreshTokenRepository,
-                       PasswordHasher passwordHasher,
-                       TokenIssuer tokenIssuer,
-                       TransactionRunner transactionRunner,
-                       Duration refreshTokenTtl,
-                       Clock clock) {
+                    RefreshTokenRepository refreshTokenRepository,
+                    PasswordHasher passwordHasher,
+                    TokenIssuer tokenIssuer,
+                    TransactionRunner transactionRunner,
+                    Duration refreshTokenTtl,
+                    Clock clock) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordHasher = passwordHasher;
@@ -69,11 +69,13 @@ public class AuthService {
 
     /**
      * Đổi refresh token lấy cặp token mới; token cũ bị thu hồi ngay (rotation).
+     * Dùng khóa dòng (findByTokenHashWithLock) để xếp hàng các request đồng thời,
+     * đảm bảo chỉ duy nhất một request đổi token thành công.
      * Thu hồi token cũ và lưu token mới nằm trong một transaction: lỗi giữa chừng thì không mất cả hai.
      */
     public AuthTokens refresh(String rawRefreshToken) {
         return transactionRunner.inTransaction(() -> {
-            RefreshToken current = refreshTokenRepository.findByTokenHash(hash(rawRefreshToken))
+            RefreshToken current = refreshTokenRepository.findByTokenHashWithLock(hash(rawRefreshToken))
                     .filter(t -> t.isUsable(clock.instant()))
                     .orElseThrow(() -> new UnauthorizedException("Invalid or expired refresh token"));
             refreshTokenRepository.save(current.revoke());
@@ -108,7 +110,7 @@ public class AuthService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    static String hash(String rawToken) {
+    public static String hash(String rawToken) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(rawToken.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);

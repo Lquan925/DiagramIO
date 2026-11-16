@@ -57,7 +57,7 @@ Access token chỉ có hạn 15 phút. Refresh token có hạn 7 ngày nhưng ch
 
 ![Làm mới token](diagrams/3-lam-moi-token.drawio.svg)
 
-- Các bước từ tìm token tới cấp token mới chạy trong một transaction. Lỗi ở bước nào cũng rollback toàn bộ, nên không xảy ra trường hợp token cũ đã bị thu hồi mà token mới chưa được lưu.
+- Các bước từ tìm token tới cấp token mới chạy trong một transaction. Truy vấn tìm token dùng khóa dòng (`SELECT ... FOR UPDATE`) để xếp hàng các request đồng thời, đảm bảo cùng một token chỉ được đổi thành công một lần (các request sau sẽ thấy token đã bị thu hồi và nhận 401). Lỗi ở bước nào cũng rollback toàn bộ, nên không xảy ra trường hợp token cũ đã bị thu hồi mà token mới chưa được lưu.
 - "Token còn dùng được" nghĩa là SHA-256 của token có trong bảng `refresh_tokens`, chưa bị thu hồi và chưa hết hạn.
 - Refresh token mới là chuỗi ngẫu nhiên 32 byte, DB chỉ lưu bản băm cùng hạn 7 ngày.
 - Gửi lại một refresh token đã dùng sẽ nhận 401. Đăng xuất (`POST /auth/logout`) cũng chỉ là đặt `revoked = true` cho token được gửi lên.

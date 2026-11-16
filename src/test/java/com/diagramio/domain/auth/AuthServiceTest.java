@@ -204,10 +204,20 @@ class AuthServiceTest {
 
     @Test
     void refreshRejectsUnknownToken() {
-        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHashWithLock(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refresh("made-up"))
                 .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void refreshUsesPessimisticLock() {
+        storedToken("locked-token", NOW.plusSeconds(60), false);
+        when(userRepository.findById(USER.id())).thenReturn(Optional.of(USER));
+
+        authService.refresh("locked-token");
+
+        verify(refreshTokenRepository).findByTokenHashWithLock(AuthService.hash("locked-token"));
     }
 
     // ---- logout ----
@@ -246,6 +256,7 @@ class AuthServiceTest {
         RefreshToken token = new RefreshToken(UUID.randomUUID(), USER.id(), AuthService.hash(rawToken),
                 expiresAt, revoked);
         when(refreshTokenRepository.findByTokenHash(AuthService.hash(rawToken))).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHashWithLock(AuthService.hash(rawToken))).thenReturn(Optional.of(token));
         return token;
     }
 }
