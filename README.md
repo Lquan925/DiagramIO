@@ -197,6 +197,31 @@ Các lần đọc trong transaction luôn bỏ qua cache, đặc biệt sau khó
 
 **Nhiều instance phải để `CACHE_MODE=disabled` trên tất cả instance.** TTL ngắn không thay thế đồng bộ invalidation; chỉ thêm Redis cũng chưa giải quyết được race khi nạp cache. Kiểm thử chuyên sâu cache sau restore và nhiều instance được để task tiếp theo; cơ chế bypass transaction và xóa sau commit đã được tích hợp ngay trong thao tác lưu.
 
+### Đo đọc lặp với và không có cache
+
+Test `ReadCacheBenchmarkTest` chạy HTTP thật với PostgreSQL Testcontainers, cùng một sơ đồ công khai khoảng 64 KiB JSON, 40 lượt warm-up rồi 200 lượt đo tuần tự cho từng vai trò/đường truy cập. TTL riêng của benchmark là 10 phút để không lẫn cache hết hạn vào phép đo hot-read; cơ chế TTL được kiểm tra riêng bằng unit test. Hibernate đếm toàn bộ prepared SQL statements trong khoảng đo; số SQL được assert, độ trễ chỉ báo cáo để tránh test phụ thuộc tốc độ máy. Cache đã nóng nên kỳ vọng 0 SQL cho các lượt đo, không có nghĩa cold start hoặc workload có ghi cũng không truy vấn.
+
+```bash
+./mvnw -q -Dtest=ReadCacheBenchmarkTest -Dcache.mode=disabled test
+./mvnw -q -Dtest=ReadCacheBenchmarkTest -Dcache.mode=local test
+```
+
+Chạy hai lệnh lần lượt khi máy không chạy tải khác; giữ nguyên TTL và dataset. Các dòng `CACHE_BENCH` in mode, số lượt, số SQL, mean/p50/p95 HTTP theo ms; đây là smoke benchmark cục bộ, không thay thế kiểm thử tải đồng thời ở mục 6.
+
+Kết quả ngày 16/11/2026 trên Windows, JDK 21.0.4, PostgreSQL `15-alpine` qua Docker Desktop; hai mode chạy tuần tự, không chạy test khác song song:
+
+| Kịch bản | SQL/200 lượt, tắt → bật | Mean HTTP ms, tắt → bật | p95 HTTP ms, tắt → bật |
+|---|---|---|---|
+| Owner qua JWT | 200 → 0 | 13.933 → 6.230 | 16.770 → 8.014 |
+| Editor qua header token | 400 → 0 | 15.774 → 4.048 | 19.875 → 5.777 |
+| Viewer qua header token | 400 → 0 | 14.446 → 3.152 | 19.027 → 4.218 |
+| Anonymous xem công khai | 200 → 0 | 9.141 → 2.873 | 12.732 → 4.062 |
+| URL chia sẻ | 400 → 0 | 12.384 → 3.213 | 15.140 → 4.359 |
+
+Trong 1.000 lượt hot-read, SQL giảm từ 1.600 xuống 0 (100%); mean giảm khoảng 55–78%, p95 giảm khoảng 52–78%. Đây là số đo quan sát của một lượt so sánh, gồm chi phí HTTP/serialize và mạng Docker cục bộ, không phải cam kết độ trễ production.
+
+Kiểm tra: `./mvnw -q -Dcache.mode=local test` qua toàn bộ regression hiện có; `./mvnw -q -Dtest=ShareExpiryMigrationTest test` xác nhận nâng schema V3 → V4 giữ nguyên link cũ và `expires_at = NULL`. Tổng báo cáo Surefire: 543 tests, không lỗi và không skip. Test cache có owner/editor/viewer/anonymous, hết hạn đúng ranh giới thời gian, đổi quyền/thu hồi, chuyển riêng tư, xóa cascade, rollback và race khi nạp lại cache; kiểm thử chuyên sâu restore/đa instance vẫn để task tiếp theo.
+
 ## 6. Kiểm thử tải trên Kaggle
 
 Link notebook: https://www.kaggle.com/code/minhwayne/diagramio
