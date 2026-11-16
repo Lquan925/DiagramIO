@@ -27,15 +27,20 @@ public class DiagramShareEntity {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     public DiagramShareEntity() {
     }
 
-    public DiagramShareEntity(UUID id, UUID diagramId, String shareToken, String role, Instant createdAt) {
+    public DiagramShareEntity(UUID id, UUID diagramId, String shareToken, String role, Instant createdAt,
+                              Instant expiresAt) {
         this.id = id;
         this.diagramId = diagramId;
         this.shareToken = shareToken;
         this.role = role;
         this.createdAt = createdAt;
+        this.expiresAt = expiresAt;
     }
 
     public UUID getId() {
@@ -76,5 +81,13 @@ public class DiagramShareEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
     }
 }

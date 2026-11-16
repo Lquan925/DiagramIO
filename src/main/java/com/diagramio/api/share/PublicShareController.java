@@ -30,9 +30,9 @@ public class PublicShareController {
 
     @GetMapping("/{token}")
     @ApiResponse(responseCode = "200", description = "Sơ đồ và quyền của token (view/edit)")
-    @ApiResponse(responseCode = "404", description = "Token không tồn tại hoặc đã bị thu hồi",
+    @ApiResponse(responseCode = "404", description = "Token không tồn tại, đã bị thu hồi hoặc hết hạn (kể cả sơ đồ công khai)",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @Operation(summary = "Truy xuất thông tin và cấu trúc sơ đồ qua token chia sẻ", description = "Ai có token hợp lệ đều có thể xem cấu trúc sơ đồ và quyền tương ứng (view/edit).")
+    @Operation(summary = "Truy xuất thông tin và cấu trúc sơ đồ qua token chia sẻ", description = "Ai có token hợp lệ đều có thể xem cấu trúc sơ đồ và quyền tương ứng (view/edit). Token hết hạn khi now >= expiresAt; URL trả 404 kể cả sơ đồ công khai.")
     public ResponseEntity<SharedDiagramResponse> getSharedDiagram(@PathVariable("token") String token) {
         SharedDiagramView diagramView = shareService.getDiagramByShareToken(token);
         return ResponseEntity.ok(SharedDiagramResponse.fromDomain(diagramView));

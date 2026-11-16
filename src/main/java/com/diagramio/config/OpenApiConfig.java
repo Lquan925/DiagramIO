@@ -51,7 +51,8 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name("X-Share-Token")
-                                .description("Token của link chia sẻ (view/edit), lấy từ POST /api/v1/diagrams/{id}/shares")))
+                                .description("Token của link chia sẻ (view/edit), lấy từ POST /api/v1/diagrams/{id}/shares. "
+                                        + "Token hết hạn khi now >= expiresAt. Header hết hạn bị bỏ qua; JWT và quyền xem sơ đồ công khai vẫn áp dụng.")))
                 // Hai mục riêng = một trong hai là đủ
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
                 .addSecurityItem(new SecurityRequirement().addList(SHARE_TOKEN));

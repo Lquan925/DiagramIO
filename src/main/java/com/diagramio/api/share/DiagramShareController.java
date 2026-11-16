@@ -54,7 +54,7 @@ public class DiagramShareController {
     @GetMapping
     @ApiResponse(responseCode = "200", description = "Các liên kết chia sẻ của sơ đồ",
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ShareResponse.class))))
-    @Operation(summary = "Danh sách liên kết chia sẻ của sơ đồ", description = "Chỉ chủ sở hữu (Owner) mới có quyền truy cập.")
+    @Operation(summary = "Danh sách liên kết chia sẻ của sơ đồ", description = "Chỉ chủ sở hữu (Owner) mới có quyền truy cập. Bao gồm cả liên kết đã hết hạn.")
     public ResponseEntity<List<ShareResponse>> getShares(
             @PathVariable("id") UUID diagramId,
             @CurrentUser UUID userId) {
@@ -68,9 +68,9 @@ public class DiagramShareController {
     }
 
     @PostMapping
-    @Operation(summary = "Tạo liên kết chia sẻ mới", description = "Tạo liên kết chia sẻ với quyền view (chỉ xem) hoặc edit (chỉnh sửa). Chỉ chủ sở hữu mới có quyền.")
+    @Operation(summary = "Tạo liên kết chia sẻ mới", description = "Tạo liên kết chia sẻ với quyền view (chỉ xem) hoặc edit (chỉnh sửa). Chỉ chủ sở hữu mới có quyền. expiresAt phải ở tương lai; bỏ qua hoặc null dùng TTL cấu hình (mặc định 7 ngày).")
     @ApiResponse(responseCode = "201", description = "Đã tạo liên kết, kèm shareToken và shareUrl")
-    @ApiResponse(responseCode = "400", description = "role không phải view/edit",
+    @ApiResponse(responseCode = "400", description = "role không phải view/edit hoặc expiresAt không hợp lệ/không ở tương lai",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<ShareResponse> createShare(
             @PathVariable("id") UUID diagramId,
@@ -78,12 +78,12 @@ public class DiagramShareController {
             @CurrentUser UUID userId) {
 
         DiagramShare created = shareService.createShare(diagramId, ShareRole.from(request.role()),
-                Caller.user(userId));
+                request.expiresAt(), Caller.user(userId));
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(created));
     }
 
     @PatchMapping("/{share_id}")
-    @Operation(summary = "Thay đổi mức độ quyền chia sẻ", description = "Đổi mức quyền (view <-> edit). Chỉ chủ sở hữu mới có quyền.")
+    @Operation(summary = "Thay đổi mức độ quyền chia sẻ", description = "Đổi mức quyền (view <-> edit). Chỉ chủ sở hữu mới có quyền. Giữ nguyên expiresAt, không gia hạn liên kết.")
     @ApiResponse(responseCode = "200", description = "Đã đổi quyền")
     @ApiResponse(responseCode = "400", description = "role không phải view/edit",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))

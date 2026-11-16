@@ -434,7 +434,7 @@ paths:
       - Diagrams
   /api/v1/diagrams/{id}/shares:
     get:
-      description: Chỉ chủ sở hữu (Owner) mới có quyền truy cập.
+      description: Chỉ chủ sở hữu (Owner) mới có quyền truy cập. Bao gồm cả liên kết đã hết hạn.
       operationId: getShares
       parameters:
       - in: path
@@ -477,7 +477,8 @@ paths:
       - Diagram Sharing
     post:
       description: Tạo liên kết chia sẻ với quyền view (chỉ xem) hoặc edit (chỉnh
-        sửa). Chỉ chủ sở hữu mới có quyền.
+        sửa). Chỉ chủ sở hữu mới có quyền. expiresAt phải ở tương lai; bỏ qua hoặc null
+        dùng TTL cấu hình (mặc định 7 ngày).
       operationId: createShare
       parameters:
       - in: path
@@ -504,7 +505,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-          description: role không phải view/edit
+          description: role không phải view/edit hoặc expiresAt không hợp lệ/không ở tương lai
         "401":
           content:
             '*/*':
@@ -574,6 +575,7 @@ paths:
       - Diagram Sharing
     patch:
       description: Đổi mức quyền (view <-> edit). Chỉ chủ sở hữu mới có quyền.
+        Giữ nguyên expiresAt, không gia hạn liên kết.
       operationId: updateShare
       parameters:
       - in: path
@@ -851,7 +853,7 @@ paths:
   /api/v1/shares/{token}:
     get:
       description: Ai có token hợp lệ đều có thể xem cấu trúc sơ đồ và quyền tương
-        ứng (view/edit).
+        ứng (view/edit). Token hết hạn khi now >= expiresAt; URL trả 404 kể cả sơ đồ công khai.
       operationId: getSharedDiagram
       parameters:
       - in: path
@@ -871,7 +873,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-          description: Token không tồn tại hoặc đã bị thu hồi
+          description: Token không tồn tại, đã bị thu hồi hoặc hết hạn (kể cả sơ đồ công khai)
       security: []
       summary: Truy xuất thông tin và cấu trúc sơ đồ qua token chia sẻ
       tags:
@@ -954,6 +956,12 @@ components:
     CreateShareRequest:
       type: object
       properties:
+        expiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: Thời điểm hết hạn, phải ở tương lai. Bỏ qua hoặc null dùng TTL cấu hình (mặc định 7 ngày).
         role:
           type: string
           description: "Quyền hạn chia sẻ: view (chỉ xem) hoặc edit (chỉnh sửa)"
@@ -1178,6 +1186,12 @@ components:
           type: string
           format: uuid
           description: Mã định danh sơ đồ
+        expiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: Liên kết hết hạn khi now >= expiresAt. Null chỉ dành cho liên kết cũ không hết hạn.
         id:
           type: string
           format: uuid
@@ -1295,7 +1309,7 @@ components:
       scheme: bearer
       type: http
     shareToken:
-      description: "Token của link chia sẻ (view/edit), lấy từ POST /api/v1/diagrams/{id}/shares"
+      description: "Token của link chia sẻ (view/edit), lấy từ POST /api/v1/diagrams/{id}/shares. Token hết hạn khi now >= expiresAt. Header hết hạn bị bỏ qua; JWT và quyền xem sơ đồ công khai vẫn áp dụng."
       in: header
       name: X-Share-Token
       type: apiKey

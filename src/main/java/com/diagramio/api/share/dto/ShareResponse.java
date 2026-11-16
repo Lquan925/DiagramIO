@@ -23,7 +23,11 @@ public record ShareResponse(
         String role,
 
         @Schema(description = "Thời gian tạo liên kết")
-        Instant createdAt
+        Instant createdAt,
+
+        @Schema(description = "Liên kết hết hạn khi now >= expiresAt. Null chỉ dành cho liên kết cũ không hết hạn.",
+                types = {"string", "null"}, format = "date-time")
+        Instant expiresAt
 ) {
     public static ShareResponse fromDomain(DiagramShare share, String shareUrl) {
         return new ShareResponse(
@@ -32,7 +36,8 @@ public record ShareResponse(
                 share.getShareToken(),
                 shareUrl,
                 share.getRole().value(),
-                share.getCreatedAt()
+                share.getCreatedAt(),
+                share.getExpiresAt()
         );
     }
 }

@@ -16,7 +16,8 @@ public class DiagramShareMapper {
                 entity.getDiagramId(),
                 entity.getShareToken(),
                 ShareRole.from(entity.getRole()),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getExpiresAt()
         );
     }
 
@@ -29,7 +30,8 @@ public class DiagramShareMapper {
                 domain.getDiagramId(),
                 domain.getShareToken(),
                 domain.getRole().value(),
-                domain.getCreatedAt()
+                domain.getCreatedAt(),
+                domain.getExpiresAt()
         );
     }
 }

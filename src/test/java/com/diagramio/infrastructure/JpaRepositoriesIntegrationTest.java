@@ -133,8 +133,24 @@ class JpaRepositoriesIntegrationTest {
         DiagramShare share = newShare(newDiagram().getId());
 
         assertThat(shareRepository.updateRole(share.getId(), share.getDiagramId(), ShareRole.EDIT)).isTrue();
-        assertThat(shareRepository.findById(share.getId())).get()
-                .extracting(DiagramShare::getRole).isEqualTo(ShareRole.EDIT);
+        assertThat(shareRepository.findById(share.getId())).get().satisfies(updated -> {
+            assertThat(updated.getRole()).isEqualTo(ShareRole.EDIT);
+            assertThat(updated.getExpiresAt()).isEqualTo(share.getExpiresAt());
+        });
+    }
+
+    @Test
+    void legacyShareExpiryRemainsNullAfterRoleUpdate() {
+        UUID diagramId = newDiagram().getId();
+        DiagramShare legacy = shareRepository.save(new DiagramShare(UUID.randomUUID(), diagramId,
+                "legacy-" + UUID.randomUUID(), ShareRole.VIEW, Instant.now().truncatedTo(ChronoUnit.MICROS), null));
+
+        assertThat(shareRepository.updateRole(legacy.getId(), diagramId, ShareRole.EDIT)).isTrue();
+        assertThat(shareRepository.findById(legacy.getId())).get().satisfies(updated -> {
+            assertThat(updated.getRole()).isEqualTo(ShareRole.EDIT);
+            assertThat(updated.getExpiresAt()).isNull();
+            assertThat(updated.isExpired(Instant.MAX)).isFalse();
+        });
     }
 
     @Test
@@ -156,8 +172,9 @@ class JpaRepositoriesIntegrationTest {
     }
 
     private DiagramShare newShare(UUID diagramId) {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         return shareRepository.save(new DiagramShare(UUID.randomUUID(), diagramId, "token-" + UUID.randomUUID(),
-                ShareRole.VIEW, Instant.now().truncatedTo(ChronoUnit.MICROS)));
+                ShareRole.VIEW, now, now.plus(7, ChronoUnit.DAYS)));
     }
 
     private Diagram newDiagram() {

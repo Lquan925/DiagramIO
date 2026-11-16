@@ -3,6 +3,8 @@ package com.diagramio.e2e;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +28,9 @@ class ShareE2eTest extends E2eTestBase {
         assertThat(s.path("shareUrl").asText()).isNotBlank();
         assertThat(s.path("role").asText()).isIn("view", "edit");
         assertThat(s.path("createdAt").isTextual()).isTrue();
+        assertThat(s.path("expiresAt").isTextual()).isTrue();
+        assertThat(Instant.parse(s.path("expiresAt").asText()))
+                .isAfter(Instant.parse(s.path("createdAt").asText()));
     }
 
     // ------------------------------------------------------------------ POST shares
@@ -104,6 +109,33 @@ class ShareE2eTest extends E2eTestBase {
         Actor a = registerAndLogin();
         String id = createDiagramId(a);
         assertError(post(shares(id)).bearer(a.accessToken()).json(obj()).send(), 400);
+    }
+
+    @Test
+    void createShareCustomExpiryIsStoredAndReturnedByOwnerList() {
+        Actor owner = registerAndLogin();
+        String id = createDiagramId(owner);
+        Instant expiresAt = Instant.now().plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Res created = post(shares(id)).bearer(owner.accessToken())
+                .json(obj("role", "view", "expiresAt", expiresAt.toString())).send();
+
+        assertStatus(created, 201);
+        assertThat(created.json().path("expiresAt").asText()).isEqualTo(expiresAt.toString());
+        Res listed = get(shares(id)).bearer(owner.accessToken()).send();
+        assertStatus(listed, 200);
+        assertThat(items(listed.json())).singleElement()
+                .satisfies(share -> assertThat(share.path("expiresAt").asText()).isEqualTo(expiresAt.toString()));
+    }
+
+    @Test
+    void createSharePastExpiryReturns400WithoutCreatingLink() {
+        Actor owner = registerAndLogin();
+        String id = createDiagramId(owner);
+        assertError(post(shares(id)).bearer(owner.accessToken())
+                .json(obj("role", "view", "expiresAt", "2000-01-01T00:00:00Z")).send(), 400);
+        Res listed = get(shares(id)).bearer(owner.accessToken()).send();
+        assertStatus(listed, 200);
+        assertThat(items(listed.json())).isEmpty();
     }
 
     @Test
@@ -241,6 +273,9 @@ class ShareE2eTest extends E2eTestBase {
         assertShareShape(r.json());
         assertThat(r.json().path("role").asText()).isEqualTo("edit");
         assertThat(r.json().path("shareToken").asText()).isEqualTo(token);
+        assertThat(Instant.parse(r.json().path("expiresAt").asText()))
+                .isCloseTo(Instant.parse(s.path("expiresAt").asText()),
+                        org.assertj.core.api.Assertions.within(1, ChronoUnit.MICROS));
 
         // same token now edits
         assertStatus(updateDiagram(Actor.shareOnly(token), id, "T", "UML", d.path("version").asInt(), dataWith("X"), null), 200);

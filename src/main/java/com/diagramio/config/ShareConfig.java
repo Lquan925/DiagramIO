@@ -3,6 +3,9 @@ package com.diagramio.config;
 import com.diagramio.domain.diagram.DiagramRepository;
 import com.diagramio.domain.share.DiagramShareRepository;
 import com.diagramio.domain.share.ShareService;
+import java.time.Clock;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,7 +18,8 @@ import org.springframework.context.annotation.Configuration;
 public class ShareConfig {
 
     @Bean
-    public ShareService shareService(DiagramShareRepository shareRepository, DiagramRepository diagramRepository) {
-        return new ShareService(shareRepository, diagramRepository);
+    public ShareService shareService(DiagramShareRepository shareRepository, DiagramRepository diagramRepository,
+                                     Clock clock, @Value("${sharing.default-link-ttl:7d}") Duration defaultLinkTtl) {
+        return new ShareService(shareRepository, diagramRepository, clock, defaultLinkTtl);
     }
 }

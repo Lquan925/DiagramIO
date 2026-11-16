@@ -16,13 +16,16 @@ public class DiagramShare {
     private final String shareToken;
     private final ShareRole role;
     private final Instant createdAt;
+    private final Instant expiresAt;
 
-    public DiagramShare(UUID id, UUID diagramId, String shareToken, ShareRole role, Instant createdAt) {
+    public DiagramShare(UUID id, UUID diagramId, String shareToken, ShareRole role, Instant createdAt,
+                        Instant expiresAt) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.diagramId = Objects.requireNonNull(diagramId, "diagramId must not be null");
         this.shareToken = Objects.requireNonNull(shareToken, "shareToken must not be null");
         this.role = Objects.requireNonNull(role, "role must not be null");
         this.createdAt = createdAt != null ? createdAt : Instant.now();
+        this.expiresAt = expiresAt;
     }
 
     public UUID getId() {
@@ -43,5 +46,13 @@ public class DiagramShare {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public boolean isExpired(Instant now) {
+        return expiresAt != null && !now.isBefore(expiresAt);
     }
 }

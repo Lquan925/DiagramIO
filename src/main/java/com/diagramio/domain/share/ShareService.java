@@ -4,11 +4,14 @@ import com.diagramio.domain.access.Caller;
 import com.diagramio.domain.access.DiagramAccess;
 import com.diagramio.domain.access.Permission;
 import com.diagramio.domain.access.ShareRole;
+import com.diagramio.domain.exception.InvalidInputException;
 import com.diagramio.domain.exception.NotFoundException;
 import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramRepository;
 
 import java.security.SecureRandom;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
@@ -26,12 +29,20 @@ public class ShareService {
     private final DiagramShareRepository shareRepository;
     private final DiagramRepository diagramRepository;
     private final DiagramAccess access;
+    private final Clock clock;
+    private final Duration defaultLinkTtl;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public ShareService(DiagramShareRepository shareRepository, DiagramRepository diagramRepository) {
+    public ShareService(DiagramShareRepository shareRepository, DiagramRepository diagramRepository,
+                        Clock clock, Duration defaultLinkTtl) {
         this.shareRepository = Objects.requireNonNull(shareRepository, "shareRepository must not be null");
         this.diagramRepository = Objects.requireNonNull(diagramRepository, "diagramRepository must not be null");
         this.access = new DiagramAccess(diagramRepository);
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.defaultLinkTtl = Objects.requireNonNull(defaultLinkTtl, "defaultLinkTtl must not be null");
+        if (defaultLinkTtl.isNegative() || defaultLinkTtl.isZero()) {
+            throw new IllegalArgumentException("defaultLinkTtl must be positive");
+        }
     }
 
     /**
@@ -45,15 +56,20 @@ public class ShareService {
     /**
      * Tạo liên kết chia sẻ mới (role: view hoặc edit). Chỉ chủ sở hữu mới có quyền tạo.
      */
-    public DiagramShare createShare(UUID diagramId, ShareRole role, Caller caller) {
+    public DiagramShare createShare(UUID diagramId, ShareRole role, Instant expiresAt, Caller caller) {
         Diagram diagram = access.require(diagramId, caller, Permission.MANAGE);
+        Instant now = clock.instant();
+        if (expiresAt != null && !expiresAt.isAfter(now)) {
+            throw new InvalidInputException("expiresAt must be in the future");
+        }
 
         DiagramShare share = new DiagramShare(
                 UUID.randomUUID(),
                 diagram.getId(),
                 generateUniqueToken(),
                 role,
-                Instant.now()
+                now,
+                expiresAt != null ? expiresAt : now.plus(defaultLinkTtl)
         );
 
         return shareRepository.save(share);
@@ -92,7 +108,8 @@ public class ShareService {
         }
 
         DiagramShare share = shareRepository.findByShareToken(token.trim())
-                .orElseThrow(() -> new NotFoundException("Share token does not exist or has been revoked"));
+                .filter(link -> !link.isExpired(clock.instant()))
+                .orElseThrow(() -> new NotFoundException("Share token does not exist or has been revoked or expired"));
 
         Diagram diagram = diagramRepository.findById(share.getDiagramId())
                 .orElseThrow(() -> new NotFoundException("Shared diagram no longer exists"));
@@ -119,6 +136,7 @@ public class ShareService {
             return Optional.empty();
         }
         return shareRepository.findByShareToken(token.trim())
+                .filter(share -> !share.isExpired(clock.instant()))
                 .map(share -> Caller.shareToken(share.getDiagramId(), share.getRole()));
     }
 

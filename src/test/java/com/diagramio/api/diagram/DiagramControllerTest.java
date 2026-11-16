@@ -188,6 +188,48 @@ class DiagramControllerTest {
                 .andExpect(jsonPath("$.data.edges").isArray());
     }
 
+    @Test
+    void expiredShareHeaderStillAllowsPublicDiagramRead() throws Exception {
+        Diagram publicDiagram = diagram();
+        publicDiagram.setPublic(true);
+        when(shareService.resolveShareToken("expired-token")).thenReturn(Optional.empty());
+        when(diagramService.getDiagramById(DIAGRAM_ID, Caller.anonymous())).thenReturn(publicDiagram);
+
+        mockMvc.perform(get("/api/v1/diagrams/{id}", DIAGRAM_ID)
+                        .header("X-Share-Token", "expired-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(DIAGRAM_ID.toString()))
+                .andExpect(jsonPath("$.isPublic").value(true));
+    }
+
+    @Test
+    void expiredShareHeaderKeepsValidJwtOwner() throws Exception {
+        when(jwtTokenProvider.parseUserId("owner-jwt")).thenReturn(Optional.of(USER_ID));
+        when(shareService.resolveShareToken("expired-token")).thenReturn(Optional.empty());
+        when(diagramService.getDiagramById(DIAGRAM_ID, Caller.user(USER_ID))).thenReturn(diagram());
+
+        mockMvc.perform(get("/api/v1/diagrams/{id}", DIAGRAM_ID)
+                        .header("Authorization", "Bearer owner-jwt")
+                        .header("X-Share-Token", "expired-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(DIAGRAM_ID.toString()));
+    }
+
+    @Test
+    void expiredShareHeaderDoesNotAllowAnonymousEdit() throws Exception {
+        when(shareService.resolveShareToken("expired-token")).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/v1/diagrams/{id}", DIAGRAM_ID)
+                        .header("X-Share-Token", "expired-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Orders","diagramType":"ERD","version":1,
+                                 "data":{"nodes":[],"edges":[]}}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
     private Diagram diagram() {
         return new Diagram(DIAGRAM_ID, "Orders", DiagramType.ERD, DiagramData.EMPTY, 1,
                 false, USER_ID, USER_ID, null, null);
