@@ -118,7 +118,7 @@ Mọi lỗi trả cùng một khung JSON:
 | 400 | Thiếu trường, sai định dạng, `title` dài hơn 255 ký tự, `data` sai cấu trúc hoặc quá 2 MB, `size` lớn hơn 100, mật khẩu cũ sai |
 | 401 | Chưa xác thực, token sai hoặc hết hạn, sai email hoặc mật khẩu; chỉ cầm `X-Share-Token` khi gọi endpoint cần tài khoản (`/users/me`, đăng xuất, sơ đồ của tôi, quản lý link); bị từ chối trên một sơ đồ khi không có tài khoản lẫn link của sơ đồ đó (ví dụ khách mở sơ đồ riêng tư) |
 | 403 | Đã biết người gọi (có tài khoản, hoặc có link của chính sơ đồ đó) nhưng không đủ quyền với sơ đồ |
-| 404 | Không tìm thấy sơ đồ, phiên bản, link, đường dẫn; token chia sẻ đã bị thu hồi |
+| 404 | Không tìm thấy sơ đồ, phiên bản, link, đường dẫn; token chia sẻ đã bị thu hồi hoặc hết hạn |
 | 405 | Sai method HTTP (header `Allow` liệt kê method hợp lệ) |
 | 409 | Lệch `version` khi cập nhật hoặc lưu phiên bản; email hay username đã tồn tại |
 | 415 | Sai `Content-Type` (API nhận `application/json`) |
@@ -164,6 +164,38 @@ Một số việc thường làm khác:
   - Dùng JDK mới hơn 21 (ví dụ 25) thì thêm `-DargLine="-Dnet.bytebuddy.experimental=true"` để Mockito chạy được.
 - Xuất lại đặc tả API sau khi đổi endpoint (app đang chạy): `curl -o docs/openapi.yaml http://localhost:8080/v3/api-docs.yaml`. Khóa được sắp xếp cố định và server là URL tương đối, nên file chỉ thay đổi khi API thay đổi; diff khác rỗng nghĩa là phải commit lại file này.
 - Thay đổi CSDL: thêm file migration mới dạng `V<số>__mo_ta.sql` (hai dấu gạch dưới) trong `src/main/resources/db/migration`, không sửa các file đã có.
+
+### Link chia sẻ có thời hạn
+
+`POST /api/v1/diagrams/{id}/shares` nhận thêm `expiresAt` dạng ISO-8601 UTC. Bỏ qua hoặc gửi `null` thì link mới hết hạn sau `SHARING_DEFAULT_LINK_TTL` (mặc định `7d`); thời điểm chỉ định phải lớn hơn thời gian hiện tại. Response tạo, liệt kê và đổi quyền trả thêm `expiresAt`.
+
+Migration V4 giữ `expires_at = NULL` cho link cũ: các link này tiếp tục không hết hạn để tránh làm hỏng liên kết đã phát hành. Đổi quyền không gia hạn link. Chủ sở hữu vẫn xem và thu hồi được link hết hạn. Tại `now >= expiresAt`, URL chia sẻ trả 404; header `X-Share-Token` không còn cấp quyền, nhưng quyền độc lập từ JWT hoặc sơ đồ công khai vẫn được giữ.
+
+### Cache đọc một instance
+
+Cache Caffeine nằm ở tầng infrastructure, không cache response hay kết quả quyết định quyền. Mỗi request vẫn kiểm tra quyền. Chỉ cache lần đọc thành công theo ID/token, không cache danh sách hoặc kết quả không tồn tại.
+
+| Biến cấu hình | Mặc định | Ý nghĩa |
+|---|---|---|
+| `CACHE_MODE` | `disabled` | `local` để bật; chỉ dùng với **một instance**, không có tiến trình khác ghi trực tiếp CSDL |
+| `CACHE_DIAGRAM_MAX_WEIGHT_BYTES` | `67108864` | 64 MiB trọng số ước lượng: 512 byte metadata + 2 byte mỗi ký tự JSON/tên, không phải giới hạn toàn bộ JVM heap |
+| `CACHE_DIAGRAM_TTL` | `60s` | Thời gian tối đa giữ sơ đồ từ lúc nạp, không kéo dài khi đọc |
+| `CACHE_SHARE_MAX_ENTRIES` | `10000` | Số token tối đa trong cache |
+| `CACHE_SHARE_TTL` | `30s` | TTL token, luôn bị giới hạn thêm bởi thời gian còn lại của link |
+
+Khóa sơ đồ là UUID; token dùng khóa SHA-256 trong cache riêng. Không đưa danh tính người gọi vào khóa, không ghi token ra log. Giá trị sơ đồ được sao chép khi vào/ra cache để sửa thất bại không thay đổi dữ liệu cache; metadata link là bất biến. Dữ liệu token vẫn được kiểm tra hết hạn bằng đồng hồ UTC trên mọi lần sử dụng, kể cả cache hit.
+
+| Thay đổi | Xử lý cache sau commit thành công |
+|---|---|
+| Sửa nội dung/metadata, công khai/riêng tư, restore | Xóa sơ đồ theo UUID |
+| Xóa sơ đồ | Xóa sơ đồ và toàn bộ cache token vì database xóa cascade các link |
+| Tạo link, đổi quyền, thu hồi | Xóa toàn bộ cache token; tránh cần thêm reverse index không giới hạn |
+| Hết hạn link | Entry tự hết hạn; kiểm tra đồng hồ vẫn chặn quyền nếu entry chưa được dọn |
+| Rollback | Không công bố dữ liệu chưa commit, không xóa cache vì thay đổi thất bại |
+
+Các lần đọc trong transaction luôn bỏ qua cache, đặc biệt sau khóa dòng khi lưu/restore phiên bản. Bộ đếm thế hệ ngăn SELECT đang chạy nạp lại dữ liệu cũ sau invalidation. Việc thu hồi/đổi quyền áp dụng từ request tiếp theo sau khi thao tác hoàn tất, không hủy request đã xác thực đang chạy.
+
+**Nhiều instance phải để `CACHE_MODE=disabled` trên tất cả instance.** TTL ngắn không thay thế đồng bộ invalidation; chỉ thêm Redis cũng chưa giải quyết được race khi nạp cache. Kiểm thử chuyên sâu cache sau restore và nhiều instance được để task tiếp theo; cơ chế bypass transaction và xóa sau commit đã được tích hợp ngay trong thao tác lưu.
 
 ## 6. Kiểm thử tải trên Kaggle
 
@@ -250,11 +282,11 @@ Baseline cố ý chưa tối ưu. Các hướng dưới đây đều đo đượ
 |---|---|---|
 | Hiệu năng truy vấn | Chỉ có index trên `diagrams.owner_id`. Tìm theo tên dùng `LIKE '%...%'` nên phải quét toàn bộ sơ đồ của người dùng | Thêm index cho `diagram_shares.diagram_id` và `diagrams.is_public`; dùng `pg_trgm` cho tìm kiếm theo tên |
 | Hiệu năng danh sách | API danh sách không trả `data` nhưng vẫn đọc cả cột này (tới 2 MB mỗi sơ đồ). Mỗi lần lấy danh sách có thể chạy tới 4 câu lệnh (hai lần SELECT, hai lần COUNT) | Chỉ đọc các cột cần thiết; gộp phần đếm vào một câu lệnh hoặc chuyển sang phân trang theo con trỏ, kèm sắp xếp theo `updated_at` |
-| Hiệu năng đọc | Mọi lần xem sơ đồ và mọi request có `X-Share-Token` đều truy vấn CSDL | Cache sơ đồ hay được đọc và kết quả tra token (Caffeine khi chạy một bản, Redis khi chạy nhiều bản), xóa cache khi sơ đồ được sửa hoặc link bị thu hồi |
+| Hiệu năng đọc | Có cache Caffeine opt-in cho sơ đồ và token trên một instance; mặc định tắt | Đo workload thực tế; bổ sung đồng bộ invalidation và kiểm thử khi chạy nhiều instance trước khi bật cache phân tán |
 | Dung lượng dữ liệu | Mỗi lần sửa gửi lại toàn bộ `data`; mỗi phiên bản lưu nguyên một bản sao `data` | Nén response bằng gzip; chỉ gửi phần thay đổi (JSON Patch); lưu phiên bản dạng phần khác biệt hoặc nén |
 | Khả năng mở rộng | Chạy một bản app. App không giữ trạng thái phiên (JWT), khóa và `version` nằm trong CSDL | Chạy nhiều bản app sau load balancer (ví dụ `docker compose up --scale app=3` cùng nginx); khi CSDL thành nút thắt thì thêm bản sao chỉ đọc và chỉnh pool kết nối |
 | Cộng tác thời gian thực | Hai người cùng sửa thì người lưu sau nhận 409 và phải tải lại sơ đồ | Dùng CRDT (ví dụ Yjs hoặc Automerge) qua WebSocket để các thay đổi tự gộp mà không mất dữ liệu; cấp danh tính khách cho từng người mở link để biết ai đang sửa; khi chạy nhiều bản app cần kênh đồng bộ chung giữa các bản (ví dụ Redis pub/sub) |
-| Bảo mật | Không giới hạn số lần đăng nhập sai; link chia sẻ không có hạn dùng; chưa cấu hình CORS nên frontend ở domain khác chưa gọi được API | Giới hạn tần suất đăng nhập; phát hiện refresh token bị dùng lại để thu hồi cả chuỗi token; cho link chia sẻ có thời hạn; cấu hình CORS chỉ cho phép domain của frontend |
+| Bảo mật | Link mới có hạn dùng, link cũ không hết hạn; chưa giới hạn đăng nhập sai và chưa cấu hình CORS | Cân nhắc thời gian chuyển tiếp cho link cũ; giới hạn tần suất đăng nhập; phát hiện refresh token bị dùng lại; cấu hình CORS cho domain frontend |
 | Đo lường | Chỉ có `/health` | Thêm Spring Boot Actuator và Prometheus để theo dõi thời gian xử lý, pool kết nối, tỉ lệ lỗi trong lúc kiểm thử tải |
 
 ## 8. Tài liệu liên quan

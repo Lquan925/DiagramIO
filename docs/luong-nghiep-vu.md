@@ -30,11 +30,11 @@ Mỗi request đi qua hai filter trước khi tới controller: filter JWT, sau 
 
 ![Xác thực một request](diagrams/1-xac-thuc-request.drawio.svg)
 
-- JWT hợp lệ là JWT có chữ ký đúng và chưa hết hạn. "Có token chia sẻ" nghĩa là request có header `X-Share-Token` và token đó vẫn còn trong bảng `diagram_shares`.
+- JWT hợp lệ là JWT có chữ ký đúng và chưa hết hạn. "Có token chia sẻ" nghĩa là request có header `X-Share-Token`, token chưa bị thu hồi và chưa tới `expiresAt`; link cũ có `expiresAt = null` không hết hạn.
 - Endpoint công khai gồm đăng ký, đăng nhập, refresh token, `/health`, `/shares/{token}`, Swagger, `GET /diagrams/public` và `GET /diagrams/{id}`. Với `GET /diagrams/{id}`, người chưa đăng nhập vẫn vào được controller, sau đó service mới quyết định có cho xem hay không.
 - Bước "Đủ quyền, dữ liệu đúng?" là phần kiểm tra trong service: dữ liệu gửi lên có đúng định dạng (400), quyền theo `Caller` qua `DiagramAccess` (mục 2, không đủ thì 403, hoặc 401 nếu người gọi không có tài khoản lẫn link của sơ đồ), sơ đồ có tồn tại (404), version có khớp (409). Các mục sau mô tả chi tiết phần này cho từng luồng.
 - Người đã đăng nhập mà vẫn gửi `X-Share-Token` thì hai thông tin được gộp lại. Nhờ vậy chủ sơ đồ mở link của chính mình vẫn giữ quyền chủ, và người sửa có đăng nhập vẫn được ghi vào `updated_by`.
-- Token chia sẻ được tra trong DB ở mỗi request, nên khi chủ đổi quyền hay thu hồi link thì thay đổi có hiệu lực ngay từ request tiếp theo.
+- Một instance có thể bật cache token với TTL mặc định 30 giây (cache mặc định tắt). Đổi quyền/thu hồi xóa cache sau commit và chặn SELECT cũ nạp lại, nên thay đổi có hiệu lực từ request tiếp theo sau khi thao tác hoàn tất. Mỗi lần dùng vẫn kiểm tra thời hạn link. Khi chạy nhiều instance, phải tắt cache tới khi có cơ chế đồng bộ invalidation.
 
 ## 2. Phân quyền theo Caller
 
@@ -112,6 +112,8 @@ Chia sẻ hoạt động giống Google Docs: chủ sơ đồ tạo link với q
 ![Vòng đời link chia sẻ](diagrams/7-link-chia-se.drawio.svg)
 
 - Token là chuỗi ngẫu nhiên 24 byte (48 ký tự hex), `role` là `view` hoặc `edit`.
+- Link mới nhận `expiresAt` trong tương lai hoặc mặc định 7 ngày theo cấu hình. Link đã có trước V4 giữ thời hạn `null`, không tự hết hạn. Đổi quyền không gia hạn link; chủ sở hữu vẫn liệt kê và thu hồi được link hết hạn.
+- Khi `now >= expiresAt`, mở URL link nhận 404 và header token bị bỏ qua, không ảnh hưởng quyền độc lập từ JWT hoặc trạng thái công khai của sơ đồ.
 - `shareUrl` được tạo từ địa chỉ server đang nhận request (localhost, Docker hay máy chủ thật) và trỏ tới `GET /shares/{token}`, vì pha 1 chưa có frontend.
 - Thu hồi xóa hẳn link, nên từ request sau mở link sẽ nhận 404 và header `X-Share-Token` bị bỏ qua.
 - Người dùng link mà không đăng nhập thì `updated_by` và `created_by` để NULL. Nhiều người dùng chung một link thì không phân biệt được ai với ai; việc này để sang pha 2, khi làm cộng tác thời gian thực.

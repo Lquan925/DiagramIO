@@ -3,6 +3,7 @@ package com.diagramio.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.diagramio.config.ReadCacheConfig;
 import com.diagramio.domain.access.ShareRole;
 import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramData;
@@ -16,6 +17,7 @@ import com.diagramio.infrastructure.diagram.DiagramRepositoryAdapter;
 import com.diagramio.infrastructure.share.DiagramShareMapper;
 import com.diagramio.infrastructure.share.DiagramShareRepositoryAdapter;
 import com.diagramio.infrastructure.version.DiagramVersionRepositoryAdapter;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -25,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -37,9 +41,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({DiagramRepositoryAdapter.class, DiagramMapper.class, DiagramVersionRepositoryAdapter.class,
-        DiagramShareRepositoryAdapter.class, DiagramShareMapper.class})
+        DiagramShareRepositoryAdapter.class, DiagramShareMapper.class, ReadCacheConfig.class})
 @Testcontainers(disabledWithoutDocker = true)
 class JpaRepositoriesIntegrationTest {
+
+    @TestConfiguration
+    static class ClockConfiguration {
+        @Bean
+        Clock clock() {
+            return Clock.systemUTC();
+        }
+    }
 
     @Container
     @ServiceConnection

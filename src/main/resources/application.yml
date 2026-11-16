@@ -28,3 +28,13 @@ jwt:
   access-token-minutes: 15
   refresh-token-days: 7
 
+sharing:
+  default-link-ttl: ${SHARING_DEFAULT_LINK_TTL:7d}
+
+cache:
+  mode: ${CACHE_MODE:disabled}
+  diagram-max-weight-bytes: ${CACHE_DIAGRAM_MAX_WEIGHT_BYTES:67108864}
+  diagram-ttl: ${CACHE_DIAGRAM_TTL:60s}
+  share-max-entries: ${CACHE_SHARE_MAX_ENTRIES:10000}
+  share-ttl: ${CACHE_SHARE_TTL:30s}
+

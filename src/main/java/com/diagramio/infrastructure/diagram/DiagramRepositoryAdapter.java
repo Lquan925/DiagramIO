@@ -4,6 +4,7 @@ import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramRepository;
 import com.diagramio.domain.diagram.DiagramType;
 import com.diagramio.domain.exception.OptimisticLockConflictException;
+import com.diagramio.infrastructure.cache.ReadCache;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,10 +18,12 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
 
     private final DiagramJpaRepository repository;
     private final DiagramMapper mapper;
+    private final ReadCache cache;
 
-    public DiagramRepositoryAdapter(DiagramJpaRepository repository, DiagramMapper mapper) {
+    public DiagramRepositoryAdapter(DiagramJpaRepository repository, DiagramMapper mapper, ReadCache cache) {
         this.repository = repository;
         this.mapper = mapper;
+        this.cache = cache;
     }
 
     /**
@@ -30,7 +33,9 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
     @Override
     public Diagram save(Diagram diagram) {
         try {
-            return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(diagram)));
+            Diagram saved = mapper.toDomain(repository.saveAndFlush(mapper.toEntity(diagram)));
+            cache.diagramChanged(saved.getId());
+            return saved;
         } catch (OptimisticLockingFailureException ex) {
             Integer currentVersion = repository.findById(diagram.getId()).map(DiagramEntity::getVersion).orElse(null);
             throw new OptimisticLockConflictException(diagram.getId(), diagram.getVersion(), currentVersion);
@@ -39,7 +44,7 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
 
     @Override
     public Optional<Diagram> findById(UUID id) {
-        return repository.findById(id).map(mapper::toDomain);
+        return cache.findDiagram(id, () -> repository.findById(id).map(mapper::toDomain));
     }
 
     @Override
@@ -69,6 +74,7 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
     @Override
     public void deleteById(UUID id) {
         repository.deleteById(id);
+        cache.diagramDeleted(id);
     }
 
     private Page<DiagramEntity> findPage(
