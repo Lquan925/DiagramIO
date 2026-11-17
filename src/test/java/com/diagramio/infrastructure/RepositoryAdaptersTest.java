@@ -94,4 +94,28 @@ class RepositoryAdaptersTest {
         assertThat(refreshTokens.findByTokenHash("b".repeat(64))).isEmpty();
         assertThat(refreshTokens.findByTokenHashWithLock("b".repeat(64))).isEmpty();
     }
+
+    @Test
+    void revokesFamilyOfRefreshTokens() {
+        UUID familyId = UUID.randomUUID();
+        Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MICROS);
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+
+        RefreshToken token1 = new RefreshToken(UUID.randomUUID(), SAMPLE_USER_ID, "x".repeat(64), expiresAt, false, familyId, null);
+        RefreshToken token2 = new RefreshToken(UUID.randomUUID(), SAMPLE_USER_ID, "y".repeat(64), expiresAt, false, familyId, null);
+
+        refreshTokens.save(token1);
+        refreshTokens.save(token2);
+
+        refreshTokens.revokeFamily(familyId, now);
+
+        assertThat(refreshTokens.findByTokenHash("x".repeat(64))).hasValueSatisfying(t -> {
+            assertThat(t.revoked()).isTrue();
+            assertThat(t.revokedAt()).isNotNull();
+        });
+        assertThat(refreshTokens.findByTokenHash("y".repeat(64))).hasValueSatisfying(t -> {
+            assertThat(t.revoked()).isTrue();
+            assertThat(t.revokedAt()).isNotNull();
+        });
+    }
 }

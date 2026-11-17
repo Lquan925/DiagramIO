@@ -11,4 +11,7 @@ public interface RefreshTokenRepository {
     Optional<RefreshToken> findByTokenHashWithLock(String tokenHash);
 
     RefreshToken save(RefreshToken refreshToken);
+
+    /** Thu hồi toàn bộ các token còn hoạt động trong cùng một chuỗi token (token family). */
+    void revokeFamily(java.util.UUID familyId, java.time.Instant now);
 }

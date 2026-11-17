@@ -28,6 +28,12 @@ public class RefreshTokenEntity {
     @Column(nullable = false)
     private boolean revoked;
 
+    @Column(name = "family_id", nullable = false)
+    private UUID familyId;
+
+    @Column(name = "revoked_at")
+    private Instant revokedAt;
+
     protected RefreshTokenEntity() {
         // JPA cần constructor không tham số
     }
@@ -39,10 +45,12 @@ public class RefreshTokenEntity {
         entity.tokenHash = token.tokenHash();
         entity.expiresAt = token.expiresAt();
         entity.revoked = token.revoked();
+        entity.familyId = token.familyId();
+        entity.revokedAt = token.revokedAt();
         return entity;
     }
 
     RefreshToken toDomain() {
-        return new RefreshToken(id, userId, tokenHash, expiresAt, revoked);
+        return new RefreshToken(id, userId, tokenHash, expiresAt, revoked, familyId, revokedAt);
     }
 }

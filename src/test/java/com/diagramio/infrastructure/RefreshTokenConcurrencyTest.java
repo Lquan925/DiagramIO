@@ -104,4 +104,36 @@ class RefreshTokenConcurrencyTest {
             pool.shutdownNow();
         }
     }
+
+    @Test
+    void reuseRotatedTokenRevokesEntireChain() {
+        AuthTokens initialTokens = authService.login("uet@gmail.com", "uet123456");
+        String token1 = initialTokens.refreshToken();
+
+        // Rotate token1 -> nhận token2
+        AuthTokens rotatedTokens = authService.refresh(token1);
+        String token2 = rotatedTokens.refreshToken();
+
+        // Token1 giờ đã bị thu hồi
+        RefreshToken token1InDb = refreshTokenRepository.findByTokenHash(AuthService.hash(token1)).orElseThrow();
+        assertThat(token1InDb.revoked()).isTrue();
+
+        // Giả lập thời gian trôi qua quá thời gian ân hạn leeway (5 giây):
+        // Cập nhật revoked_at của token1 về 10 giây trước
+        RefreshToken agedToken1 = new RefreshToken(token1InDb.id(), token1InDb.userId(), token1InDb.tokenHash(),
+                token1InDb.expiresAt(), true, token1InDb.familyId(), java.time.Instant.now().minusSeconds(10));
+        refreshTokenRepository.save(agedToken1);
+
+        // Kẻ gian cố tình gửi lại token1 (Token Reuse Attack)
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> authService.refresh(token1))
+                .isInstanceOf(UnauthorizedException.class);
+
+        // Khẳng định: Toàn bộ chuỗi token đã bị thu hồi! Token2 cũng bị revoked!
+        RefreshToken token2InDb = refreshTokenRepository.findByTokenHash(AuthService.hash(token2)).orElseThrow();
+        assertThat(token2InDb.revoked()).isTrue();
+
+        // Thử refresh bằng token2 cũng sẽ bị từ chối
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> authService.refresh(token2))
+                .isInstanceOf(UnauthorizedException.class);
+    }
 }

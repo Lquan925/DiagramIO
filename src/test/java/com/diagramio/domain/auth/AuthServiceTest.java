@@ -192,6 +192,36 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.refresh("old-token"))
                 .isInstanceOf(UnauthorizedException.class);
         verify(refreshTokenRepository, never()).save(any());
+        verify(refreshTokenRepository, never()).revokeFamily(any(), any());
+    }
+
+    @Test
+    void refreshRejectsRevokedTokenBeyondLeewayRevokesEntireFamily() {
+        UUID familyId = UUID.randomUUID();
+        RefreshToken token = new RefreshToken(UUID.randomUUID(), USER.id(), AuthService.hash("hacked-token"),
+                NOW.plus(Duration.ofDays(1)), true, familyId, NOW.minusSeconds(10));
+        when(refreshTokenRepository.findByTokenHashWithLock(AuthService.hash("hacked-token"))).thenReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> authService.refresh("hacked-token"))
+                .isInstanceOf(UnauthorizedException.class);
+
+        verify(refreshTokenRepository).revokeFamily(org.mockito.ArgumentMatchers.eq(familyId), org.mockito.ArgumentMatchers.eq(NOW));
+    }
+
+    @Test
+    void refreshPreservesFamilyId() {
+        UUID familyId = UUID.randomUUID();
+        RefreshToken token = new RefreshToken(UUID.randomUUID(), USER.id(), AuthService.hash("parent-token"),
+                NOW.plus(Duration.ofDays(1)), false, familyId, null);
+        when(refreshTokenRepository.findByTokenHashWithLock(AuthService.hash("parent-token"))).thenReturn(Optional.of(token));
+        when(userRepository.findById(USER.id())).thenReturn(Optional.of(USER));
+
+        authService.refresh("parent-token");
+
+        ArgumentCaptor<RefreshToken> saved = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(refreshTokenRepository, times(2)).save(saved.capture());
+        RefreshToken childToken = saved.getAllValues().get(1);
+        assertThat(childToken.familyId()).isEqualTo(familyId);
     }
 
     @Test
