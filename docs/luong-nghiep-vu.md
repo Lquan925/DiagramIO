@@ -19,6 +19,7 @@ Trong các sơ đồ, ô bo tròn màu xanh lá là điểm bắt đầu hoặc 
 | 403 | Đã biết người gọi là ai (có tài khoản, hoặc có link của chính sơ đồ đó) nhưng không đủ quyền với sơ đồ |
 | 404 | Không tìm thấy sơ đồ, phiên bản, link, hoặc token chia sẻ đã bị thu hồi |
 | 409 | Xung đột: version sơ đồ đã thay đổi, email hoặc username đã tồn tại |
+| 429 | Quá số lượng yêu cầu cho phép (Rate limit) trên các endpoint xác thực |
 
 ---
 

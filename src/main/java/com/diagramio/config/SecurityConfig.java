@@ -1,13 +1,18 @@
 package com.diagramio.config;
 
 import com.diagramio.api.dto.ErrorResponse;
+import com.diagramio.api.security.InMemoryRateLimiter;
+import com.diagramio.api.security.RateLimitFilter;
+import com.diagramio.api.security.RateLimiter;
 import com.diagramio.domain.share.ShareService;
 import com.diagramio.infrastructure.security.JwtAuthenticationFilter;
 import com.diagramio.infrastructure.security.JwtTokenProvider;
 import com.diagramio.infrastructure.security.ShareTokenAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * /api/v1/shares/** công khai để xem sơ đồ qua link chia sẻ; GET /api/v1/diagrams/* công khai cho sơ đồ public.
  * Người gọi được xác định bởi filter JWT rồi filter X-Share-Token (link chia sẻ); hai filter không tự
  * từ chối, request chưa xác thực vào endpoint cần đăng nhập sẽ nhận 401 dạng JSON.
+ * Endpoint xác thực được bảo vệ bởi RateLimitFilter (trả 429 khi vượt ngưỡng).
  */
 @Configuration
 public class SecurityConfig {
@@ -42,9 +48,17 @@ public class SecurityConfig {
     };
 
     @Bean
+    public RateLimiter rateLimiter(
+            @Value("${rate-limit.auth.max-requests:10}") int maxRequests,
+            @Value("${rate-limit.auth.window-seconds:60}") int windowSeconds) {
+        return new InMemoryRateLimiter(maxRequests, Duration.ofSeconds(windowSeconds));
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtTokenProvider jwtTokenProvider,
                                                    ShareService shareService,
+                                                   RateLimiter rateLimiter,
                                                    ObjectMapper objectMapper)
             throws Exception {
         http
@@ -55,6 +69,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/diagrams/*").permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(new RateLimitFilter(rateLimiter, objectMapper),
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new ShareTokenAuthenticationFilter(shareService), JwtAuthenticationFilter.class);

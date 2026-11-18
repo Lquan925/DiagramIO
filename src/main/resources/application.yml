@@ -28,3 +28,9 @@ jwt:
   access-token-minutes: 15
   refresh-token-days: 7
 
+rate-limit:
+  auth:
+    max-requests: 10
+    window-seconds: 60
+
+
