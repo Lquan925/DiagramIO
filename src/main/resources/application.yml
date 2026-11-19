@@ -33,4 +33,12 @@ rate-limit:
     max-requests: 10
     window-seconds: 60
 
+cleanup:
+  refresh-tokens:
+    cron: "0 0 3 * * *"
+    retention-days: 7
+    batch-size: 1000
+    max-batches: 10
+
+
 

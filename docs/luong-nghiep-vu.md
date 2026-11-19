@@ -63,6 +63,7 @@ Access token chỉ có hạn 15 phút. Refresh token có hạn 7 ngày nhưng ch
 - Refresh token mới là chuỗi ngẫu nhiên 32 byte, DB chỉ lưu bản băm cùng hạn 7 ngày.
 - Gửi lại một refresh token đã dùng sẽ nhận 401. Hệ thống áp dụng cơ chế **phát hiện tái sử dụng token (Token Reuse Detection)**: Mỗi phiên đăng nhập tạo một chuỗi token (`family_id`). Khi một refresh token đã bị thu hồi bị gửi lại và vượt quá thời gian ân hạn (leeway 5 giây cho các request đồng thời/in-flight), hệ thống xác định đây là hành vi tái sử dụng trái phép và lập tức thu hồi toàn bộ chuỗi token (`family_id`), buộc kẻ gian và người dùng phải đăng nhập lại.
 - Đăng xuất (`POST /auth/logout`) cũng là đặt `revoked = true` cho token được gửi lên.
+- Tác vụ định kỳ (`RefreshTokenCleanupTask`) tự động dọn dẹp các token đã hết hạn theo từng lô nhỏ (mặc định 1.000 bản ghi/lô). Để phục vụ việc phát hiện tái sử dụng token, các token đã bị thu hồi (`revoked = true`) được áp dụng chính sách lưu giữ (retention policy, giữ lại tối thiểu 7 ngày sau khi thu hồi) trước khi xóa vĩnh viễn khỏi CSDL.
 
 ## 4. Cập nhật sơ đồ (optimistic locking)
 

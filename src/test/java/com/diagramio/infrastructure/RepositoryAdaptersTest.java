@@ -118,4 +118,51 @@ class RepositoryAdaptersTest {
             assertThat(t.revokedAt()).isNotNull();
         });
     }
+
+    @Test
+    void deletesExpiredTokensWithRetentionPolicyAndBatchLimit() {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        Instant sevenDaysAgo = now.minus(7, ChronoUnit.DAYS);
+
+        // 1. Hết hạn, chưa revoked -> xóa được ngay
+        RefreshToken expiredNotRevoked = new RefreshToken(
+                UUID.randomUUID(), SAMPLE_USER_ID, "1".repeat(64),
+                now.minus(1, ChronoUnit.DAYS), false, UUID.randomUUID(), null);
+
+        // 2. Hết hạn, revoked trước 7 ngày -> xóa được
+        RefreshToken expiredRevokedOld = new RefreshToken(
+                UUID.randomUUID(), SAMPLE_USER_ID, "2".repeat(64),
+                now.minus(10, ChronoUnit.DAYS), true, UUID.randomUUID(), now.minus(8, ChronoUnit.DAYS));
+
+        // 3. Hết hạn, nhưng mới revoked 2 ngày trước -> PHẢI GIỮ LẠI để phát hiện tái sử dụng
+        RefreshToken expiredRevokedRecent = new RefreshToken(
+                UUID.randomUUID(), SAMPLE_USER_ID, "3".repeat(64),
+                now.minus(2, ChronoUnit.DAYS), true, UUID.randomUUID(), now.minus(2, ChronoUnit.DAYS));
+
+        // 4. Chưa hết hạn -> PHẢI GIỮ LẠI
+        RefreshToken activeToken = new RefreshToken(
+                UUID.randomUUID(), SAMPLE_USER_ID, "4".repeat(64),
+                now.plus(5, ChronoUnit.DAYS), false, UUID.randomUUID(), null);
+
+        refreshTokens.save(expiredNotRevoked);
+        refreshTokens.save(expiredRevokedOld);
+        refreshTokens.save(expiredRevokedRecent);
+        refreshTokens.save(activeToken);
+
+        // Batch size = 1: chỉ xóa tối đa 1 token
+        int firstBatchDeleted = refreshTokens.deleteExpiredTokensBatch(now, sevenDaysAgo, 1);
+        assertThat(firstBatchDeleted).isEqualTo(1);
+
+        // Batch size = 10: xóa tiếp token còn lại thỏa điều kiện
+        int secondBatchDeleted = refreshTokens.deleteExpiredTokensBatch(now, sevenDaysAgo, 10);
+        assertThat(secondBatchDeleted).isEqualTo(1);
+
+        // Kiểm tra kết quả trong DB: token 3 và 4 vẫn còn
+        assertThat(refreshTokens.findByTokenHash("3".repeat(64))).isPresent();
+        assertThat(refreshTokens.findByTokenHash("4".repeat(64))).isPresent();
+
+        // Không còn token nào thỏa điều kiện xóa nữa
+        int thirdBatchDeleted = refreshTokens.deleteExpiredTokensBatch(now, sevenDaysAgo, 10);
+        assertThat(thirdBatchDeleted).isZero();
+    }
 }
