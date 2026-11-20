@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Bảo mật: stateless, endpoint công khai được mở, còn lại phải xác thực.
@@ -55,17 +59,41 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173}") List<String> allowedOrigins,
+            @Value("${cors.allowed-methods:GET,POST,PUT,PATCH,DELETE,OPTIONS}") List<String> allowedMethods,
+            @Value("${cors.allowed-headers:*}") List<String> allowedHeaders,
+            @Value("${cors.exposed-headers:Authorization,Retry-After,X-Share-Token}") List<String> exposedHeaders,
+            @Value("${cors.allow-credentials:true}") boolean allowCredentials,
+            @Value("${cors.max-age-seconds:3600}") long maxAgeSeconds) {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(allowedMethods);
+        configuration.setAllowedHeaders(allowedHeaders);
+        configuration.setExposedHeaders(exposedHeaders);
+        configuration.setAllowCredentials(allowCredentials);
+        configuration.setMaxAge(maxAgeSeconds);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtTokenProvider jwtTokenProvider,
                                                    ShareService shareService,
                                                    RateLimiter rateLimiter,
-                                                   ObjectMapper objectMapper)
+                                                   ObjectMapper objectMapper,
+                                                   CorsConfigurationSource corsConfigurationSource)
             throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(e -> e.authenticationEntryPoint(jsonUnauthorizedEntryPoint(objectMapper)))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/diagrams/*").permitAll()
                         .anyRequest().authenticated())

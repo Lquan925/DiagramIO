@@ -9,6 +9,7 @@ Tài liệu này mô tả các luồng xử lý chính của DiagramIO. Những 
 5. [Lưu phiên bản (snapshot)](#5-lưu-phiên-bản-snapshot)
 6. [Khôi phục phiên bản](#6-khôi-phục-phiên-bản)
 7. [Vòng đời link chia sẻ](#7-vòng-đời-link-chia-sẻ)
+8. [Cấu hình môi trường, bảo mật và CORS](#8-cấu-hình-môi-trường-bảo-mật-và-cors)
 
 Trong các sơ đồ, ô bo tròn màu xanh lá là điểm bắt đầu hoặc kết thúc thành công, hình chữ nhật màu xanh dương là bước xử lý, hình thoi màu vàng là điều kiện và ô bo tròn màu đỏ là kết thúc bằng lỗi. Các đường dẫn trong tài liệu viết gọn, bỏ tiền tố `/api/v1`. Khi có lỗi, API trả về JSON gồm `timestamp`, `status`, `error`, `message`, `path` và dữ liệu không bị thay đổi. Các sơ đồ là file `.drawio.svg` trong thư mục [diagrams](diagrams), mở bằng draw.io (bản web, desktop hoặc extension của VS Code) là sửa được.
 
@@ -119,3 +120,21 @@ Chia sẻ hoạt động giống Google Docs: chủ sơ đồ tạo link với q
 - Thu hồi xóa hẳn link, nên từ request sau mở link sẽ nhận 404 và header `X-Share-Token` bị bỏ qua.
 - Người dùng link mà không đăng nhập thì `updated_by` và `created_by` để NULL. Nhiều người dùng chung một link thì không phân biệt được ai với ai; việc này để sang pha 2, khi làm cộng tác thời gian thực.
 - Chỉ chủ sơ đồ quản lý được link. Các endpoint `/shares` cần tài khoản, nên người chỉ cầm link (kể cả link edit) nhận 401; người đăng nhập nhưng không phải chủ nhận 403.
+
+## 8. Cấu hình môi trường, bảo mật và CORS
+
+Hệ thống tách biệt cấu hình giữa môi trường phát triển/demo (`dev`) và môi trường triển khai thực tế (`prod`) thông qua Spring Profiles.
+
+### 8.1. Cấu hình CORS (Cross-Origin Resource Sharing)
+- Cấu hình qua danh sách `cors.allowed-origins` (mặc định: `http://localhost:3000`, `http://localhost:5173`).
+- Cho phép các phương thức: `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
+- Cho phép gửi credentials (`allow-credentials: true`).
+- Expose các header: `Authorization`, `Retry-After`, `X-Share-Token`.
+- Các request `OPTIONS` (preflight) được cấp phép công khai và phản hồi tức thì với mã 200 OK. Request từ origin không được phép sẽ bị chặn với mã 403 Forbidden.
+
+### 8.2. Ràng buộc bảo mật Production (profile `prod`)
+- **Bắt buộc JWT Secret riêng:** Khi kích hoạt profile `prod`, ứng dụng bắt buộc phải nhận biến môi trường `JWT_SECRET` với độ dài tối thiểu 32 ký tự. Nếu để trống hoặc dùng secret mặc định của dev, ứng dụng sẽ từ chối khởi động (fail-fast) ngay lập tức.
+- **Xử lý tài khoản mẫu (`uet@gmail.com`):**
+  - Mặc định ở môi trường dev: Tài khoản mẫu được giữ nguyên (`sample-account.action: keep`) phục vụ kiểm thử và demo.
+  - Khi triển khai production: Cơ chế `SampleAccountSecurityManager` tự động kích hoạt chế độ vô hiệu hóa (`disable`), cập nhật `password_hash` thành chuỗi không thể giải mã (`DISABLED_<uuid>`), ngăn chặn hoàn toàn việc đăng nhập bằng mật khẩu mặc định mà vẫn bảo toàn toàn vẹn dữ liệu cho các sơ đồ liên kết. Có thể cấu hình `sample-account.action: delete` nếu muốn xóa hẳn tài khoản mẫu.
+
