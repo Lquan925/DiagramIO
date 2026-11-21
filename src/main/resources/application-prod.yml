@@ -38,3 +38,10 @@ cors:
     - X-Share-Token
   allow-credentials: true
   max-age-seconds: 3600
+
+monitoring:
+  # Bắt buộc token bảo mật giám sát riêng khi chạy Production
+  secret-token: ${MONITORING_SECRET_TOKEN:}
+  # Trong production chỉ chấp nhận xác thực qua token bí mật, không mở theo IP
+  allow-local: ${MONITORING_ALLOW_LOCAL:false}
+

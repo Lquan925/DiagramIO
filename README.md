@@ -267,3 +267,4 @@ Baseline cố ý chưa tối ưu. Các hướng dưới đây đều đo đượ
 
 - [docs/openapi.yaml](docs/openapi.yaml): đặc tả API dạng OpenAPI 3.1. Xem trực quan bằng cách mở file trong [Swagger Editor](https://editor.swagger.io) (File, Import file) hoặc extension OpenAPI của VS Code.
 - [docs/luong-nghiep-vu.md](docs/luong-nghiep-vu.md): flowchart các luồng xác thực, phân quyền, cập nhật sơ đồ, phiên bản và chia sẻ.
+- [docs/huong-dan-giam-sat-metrics.md](docs/huong-dan-giam-sat-metrics.md): hướng dẫn giám sát hệ thống với Prometheus Metrics & Spring Boot Actuator (thời gian phản hồi, tỷ lệ lỗi, connection pool HikariCP).

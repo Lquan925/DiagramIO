@@ -66,5 +66,44 @@ sample-account:
   # Hành động với tài khoản mẫu (keep / disable / delete). Mặc định ở dev là keep.
   action: ${SAMPLE_ACCOUNT_ACTION:keep}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - prometheus
+          - metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      hikaricp: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+      sla:
+        http.server.requests: 50ms, 100ms, 200ms, 500ms, 1s, 2s
+
+monitoring:
+  # Token bảo mật truy cập endpoint giám sát /actuator/**
+  secret-token: ${MONITORING_SECRET_TOKEN:monitoring-secret-token-32chars-ok}
+  # Cho phép IP local / loopback truy cập mà không cần token
+  allow-local: true
+
+
 
 

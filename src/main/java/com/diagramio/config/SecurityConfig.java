@@ -2,6 +2,7 @@ package com.diagramio.config;
 
 import com.diagramio.api.dto.ErrorResponse;
 import com.diagramio.api.security.InMemoryRateLimiter;
+import com.diagramio.api.security.MonitoringSecurityFilter;
 import com.diagramio.api.security.RateLimitFilter;
 import com.diagramio.api.security.RateLimiter;
 import com.diagramio.domain.share.ShareService;
@@ -48,7 +49,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/v3/api-docs.yaml",
             "/swagger-ui.html",
-            "/swagger-ui/**"
+            "/swagger-ui/**",
+            "/actuator/**"
     };
 
     @Bean
@@ -85,7 +87,9 @@ public class SecurityConfig {
                                                    ShareService shareService,
                                                    RateLimiter rateLimiter,
                                                    ObjectMapper objectMapper,
-                                                   CorsConfigurationSource corsConfigurationSource)
+                                                   CorsConfigurationSource corsConfigurationSource,
+                                                   @Value("${monitoring.secret-token:monitoring-secret-token-32chars-ok}") String monitoringSecretToken,
+                                                   @Value("${monitoring.allow-local:true}") boolean monitoringAllowLocal)
             throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -97,6 +101,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/diagrams/*").permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(new MonitoringSecurityFilter(monitoringSecretToken, monitoringAllowLocal, objectMapper),
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new RateLimitFilter(rateLimiter, objectMapper),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
