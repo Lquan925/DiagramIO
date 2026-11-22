@@ -209,6 +209,22 @@ class AuthServiceTest {
     }
 
     @Test
+    void refreshRejectsRevokedTokenWithinLeewayWithoutRevokingFamily() {
+        UUID familyId = UUID.randomUUID();
+        // Token bị thu hồi chỉ 2 giây trước (trong khoảng leeway 5 giây, e.g. request in-flight đến chậm)
+        RefreshToken token = new RefreshToken(UUID.randomUUID(), USER.id(), AuthService.hash("inflight-token"),
+                NOW.plus(Duration.ofDays(1)), true, familyId, NOW.minusSeconds(2));
+        when(refreshTokenRepository.findByTokenHashWithLock(AuthService.hash("inflight-token"))).thenReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> authService.refresh("inflight-token"))
+                .isInstanceOf(UnauthorizedException.class);
+
+        // Khẳng định: Không gọi revokeFamily vì vẫn còn trong thời gian ân hạn leeway
+        verify(refreshTokenRepository, never()).revokeFamily(any(), any());
+        verify(refreshTokenRepository, never()).save(any());
+    }
+
+    @Test
     void refreshPreservesFamilyId() {
         UUID familyId = UUID.randomUUID();
         RefreshToken token = new RefreshToken(UUID.randomUUID(), USER.id(), AuthService.hash("parent-token"),
