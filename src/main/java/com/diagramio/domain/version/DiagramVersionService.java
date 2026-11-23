@@ -40,7 +40,7 @@ public class DiagramVersionService {
         this.clock = clock;
     }
 
-    public List<DiagramVersion> listVersions(UUID diagramId, Caller caller) {
+    public List<DiagramVersionSummary> listVersions(UUID diagramId, Caller caller) {
         access.require(diagramId, caller, Permission.VIEW_HISTORY);
         return versionRepository.findByDiagramId(diagramId);
     }

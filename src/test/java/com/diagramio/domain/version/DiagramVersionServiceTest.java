@@ -167,9 +167,9 @@ class DiagramVersionServiceTest {
     @Test
     void viewerCanListVersions() {
         DiagramVersion v = version(UUID.randomUUID(), 1, OLD_DATA);
-        when(versionRepository.findByDiagramId(diagramId)).thenReturn(List.of(v));
+        when(versionRepository.findByDiagramId(diagramId)).thenReturn(List.of(DiagramVersionSummary.from(v)));
 
-        assertThat(service.listVersions(diagramId, Caller.shareToken(diagramId, ShareRole.VIEW))).containsExactly(v);
+        assertThat(service.listVersions(diagramId, Caller.shareToken(diagramId, ShareRole.VIEW))).containsExactly(DiagramVersionSummary.from(v));
     }
 
     @Test

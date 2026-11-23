@@ -2,6 +2,7 @@ package com.diagramio.infrastructure.version;
 
 import com.diagramio.domain.exception.ConflictException;
 import com.diagramio.domain.version.DiagramVersion;
+import com.diagramio.domain.version.DiagramVersionSummary;
 import com.diagramio.domain.version.DiagramVersionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
@@ -45,10 +46,8 @@ public class DiagramVersionRepositoryAdapter implements DiagramVersionRepository
     }
 
     @Override
-    public List<DiagramVersion> findByDiagramId(UUID diagramId) {
-        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId).stream()
-                .map(DiagramVersionEntity::toDomain)
-                .toList();
+    public List<DiagramVersionSummary> findByDiagramId(UUID diagramId) {
+        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId);
     }
 
     @Override

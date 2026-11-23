@@ -17,7 +17,7 @@ public interface DiagramVersionRepository {
     DiagramVersion save(DiagramVersion version);
 
     /** Các snapshot của sơ đồ, mới nhất trước. */
-    List<DiagramVersion> findByDiagramId(UUID diagramId);
+    List<DiagramVersionSummary> findByDiagramId(UUID diagramId);
 
     Optional<DiagramVersion> findByIdAndDiagramId(UUID id, UUID diagramId);
 

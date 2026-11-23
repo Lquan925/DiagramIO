@@ -162,7 +162,7 @@ class DiagramVersionControllerTest {
     @Test
     void listReturnsSummariesWithoutData() throws Exception {
         when(versionService.listVersions(diagramId, Caller.user(ownerId)))
-                .thenReturn(List.of(version(UUID.randomUUID(), 2), version(versionId, 1)));
+                .thenReturn(List.of(com.diagramio.domain.version.DiagramVersionSummary.from(version(UUID.randomUUID(), 2)), com.diagramio.domain.version.DiagramVersionSummary.from(version(versionId, 1))));
 
         mockMvc.perform(get(base).with(user(ownerId.toString())))
                 .andExpect(status().isOk())
