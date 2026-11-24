@@ -167,17 +167,19 @@ class DiagramVersionServiceTest {
     @Test
     void viewerCanListVersions() {
         DiagramVersion v = version(UUID.randomUUID(), 1, OLD_DATA);
-        when(versionRepository.findByDiagramId(diagramId)).thenReturn(List.of(DiagramVersionSummary.from(v)));
+        when(versionRepository.countByDiagramId(diagramId)).thenReturn(1L);
+        when(versionRepository.findByDiagramId(diagramId, 0, 20)).thenReturn(List.of(DiagramVersionSummary.from(v)));
 
-        assertThat(service.listVersions(diagramId, Caller.shareToken(diagramId, ShareRole.VIEW))).containsExactly(DiagramVersionSummary.from(v));
+        assertThat(service.listVersions(diagramId, Caller.shareToken(diagramId, ShareRole.VIEW), 0, 20).content()).containsExactly(DiagramVersionSummary.from(v));
     }
 
     @Test
     void strangerCannotListVersionsOfPublicDiagram() {
         diagram.setPublic(true);
 
-        assertThatThrownBy(() -> service.listVersions(diagramId, Caller.user(UUID.randomUUID())))
+        assertThatThrownBy(() -> service.listVersions(diagramId, Caller.user(UUID.randomUUID()), 0, 20))
                 .isInstanceOf(ForbiddenException.class);
+        org.mockito.Mockito.verifyNoInteractions(versionRepository);
     }
 
     @Test
@@ -262,5 +264,14 @@ class DiagramVersionServiceTest {
 
     private DiagramVersion version(UUID id, int number, DiagramData data) {
         return new DiagramVersion(id, diagramId, number, data, "note " + number, ownerId, NOW.minusSeconds(600));
+    }
+
+    @Test
+    void outOfRangePageCountsWithoutReadingAnotherPage() {
+        when(versionRepository.countByDiagramId(diagramId)).thenReturn(45L);
+        var result = service.listVersions(diagramId, Caller.user(ownerId), Integer.MAX_VALUE, 100);
+        assertThat(result.content()).isEmpty();
+        assertThat(result.totalElements()).isEqualTo(45);
+        verify(versionRepository, never()).findByDiagramId(any(), org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt());
     }
 }

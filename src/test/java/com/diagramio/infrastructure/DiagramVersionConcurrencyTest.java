@@ -90,6 +90,26 @@ class DiagramVersionConcurrencyTest {
         assertThat(restored.getData().json()).contains("\"A\"");
     }
 
+    @Test
+    void mixedSnapshotsAndRestoresSerializeWithoutLostBackups() throws Exception {
+        Diagram diagram = newDiagram(DATA_A);
+        var target = versionService.createVersion(diagram.getId(), "target", null, OWNER);
+        var storedTarget = versionService.getVersion(diagram.getId(), target.id(), OWNER);
+        diagram.setData(DATA_B);
+        int before = diagramRepository.save(diagram).getVersion();
+        List<Integer> numbers = runConcurrently(20, i -> () -> i % 2 == 0
+                ? versionService.createVersion(diagram.getId(), "mixed " + i, null, OWNER).versionNumber()
+                : versionService.restore(diagram.getId(), target.id(), OWNER).backup().versionNumber());
+        assertThat(numbers.stream().sorted().toList())
+                .containsExactlyElementsOf(IntStream.rangeClosed(2, 21).boxed().toList());
+        var history = versionService.listVersions(diagram.getId(), OWNER, 0, 100);
+        assertThat(history.totalElements()).isEqualTo(21);
+        Diagram after = diagramRepository.findById(diagram.getId()).orElseThrow();
+        assertThat(after.getVersion()).isEqualTo(before + 10);
+        assertThat(after.getData().json()).contains("\"A\"");
+        assertThat(versionService.getVersion(diagram.getId(), target.id(), OWNER)).isEqualTo(storedTarget);
+    }
+
     private Diagram newDiagram(DiagramData data) {
         Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         return diagramRepository.save(new Diagram(null, "race", DiagramType.ERD, data, 1, false, SEED_USER, SEED_USER, now, now));

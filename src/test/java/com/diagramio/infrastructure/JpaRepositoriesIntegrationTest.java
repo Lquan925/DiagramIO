@@ -64,7 +64,7 @@ class JpaRepositoriesIntegrationTest {
         versionRepository.save(snapshot(diagram.getId(), 1));
         DiagramVersion second = versionRepository.save(snapshot(diagram.getId(), 2));
 
-        List<com.diagramio.domain.version.DiagramVersionSummary> versions = versionRepository.findByDiagramId(diagram.getId());
+        List<com.diagramio.domain.version.DiagramVersionSummary> versions = versionRepository.findByDiagramId(diagram.getId(), 0, 20);
 
         assertThat(versions).extracting(com.diagramio.domain.version.DiagramVersionSummary::versionNumber).containsExactly(2, 1);
         assertThat(versionRepository.maxVersionNumber(diagram.getId())).isEqualTo(2);

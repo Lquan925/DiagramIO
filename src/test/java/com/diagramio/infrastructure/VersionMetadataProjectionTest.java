@@ -1,24 +1,13 @@
 package com.diagramio.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.diagramio.domain.access.ShareRole;
-import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramData;
-import com.diagramio.domain.diagram.DiagramType;
-import com.diagramio.domain.exception.ConflictException;
-import com.diagramio.domain.exception.OptimisticLockConflictException;
-import com.diagramio.domain.share.DiagramShare;
 import com.diagramio.domain.version.DiagramVersion;
-import com.diagramio.infrastructure.diagram.DiagramMapper;
-import com.diagramio.infrastructure.diagram.DiagramRepositoryAdapter;
-import com.diagramio.infrastructure.share.DiagramShareMapper;
 
 import com.diagramio.infrastructure.version.DiagramVersionRepositoryAdapter;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +62,7 @@ class VersionMetadataProjectionTest {
                 DATA, null, null, Instant.now().truncatedTo(ChronoUnit.MICROS));
         versionRepository.save(version);
         SqlCapture.statements.get().clear();
-        assertThat(versionRepository.findByDiagramId(diagramId))
+        assertThat(versionRepository.findByDiagramId(diagramId, 0, 20))
                 .containsExactly(com.diagramio.domain.version.DiagramVersionSummary.from(version));
         assertThat(SqlCapture.statements.get()).hasSize(1);
         String sql = SqlCapture.statements.get().getFirst().toLowerCase(java.util.Locale.ROOT);
@@ -81,7 +70,38 @@ class VersionMetadataProjectionTest {
         assertThat(sql.substring(0, sql.indexOf(" from ")))
                 .doesNotContain(".data", "*", "diagram_id")
                 .contains(".id", ".version_number", ".note", ".created_by", ".created_at");
-        assertThat(versionRepository.findByDiagramId(UUID.randomUUID())).isEmpty();
+        assertThat(versionRepository.findByDiagramId(UUID.randomUUID(), 0, 20)).isEmpty();
+        SqlCapture.statements.remove();
+    }
+
+
+    @Test
+    void databasePagesAreCompleteOrderedAndDoNotReadSnapshots() {
+        UUID id = newDiagramId();
+        for (int n = 1; n <= 45; n++) {
+            versionRepository.save(new DiagramVersion(UUID.randomUUID(), id, n, DATA,
+                    n == 1 ? null : "note " + n, null, Instant.now().truncatedTo(ChronoUnit.MICROS)));
+        }
+        entityManager.clear();
+        var numbers = new java.util.ArrayList<Integer>();
+        for (int page = 0; page < 3; page++) {
+            SqlCapture.statements.get().clear();
+            var rows = versionRepository.findByDiagramId(id, page, 20);
+            assertThat(rows).hasSize(page == 2 ? 5 : 20);
+            numbers.addAll(rows.stream().map(com.diagramio.domain.version.DiagramVersionSummary::versionNumber).toList());
+            assertThat(SqlCapture.statements.get()).hasSize(1);
+            String sql = SqlCapture.statements.get().getFirst().toLowerCase(java.util.Locale.ROOT);
+            assertThat(sql).contains("from diagram_versions", "fetch first");
+            if (page > 0) assertThat(sql).contains("offset");
+            assertThat(sql.substring(0, sql.indexOf(" from "))).doesNotContain(".data", "*");
+        }
+        assertThat(numbers).containsExactlyElementsOf(java.util.stream.IntStream.iterate(45, n -> n - 1).limit(45).boxed().toList());
+        assertThat(versionRepository.findByDiagramId(id, 3, 20)).isEmpty();
+        SqlCapture.statements.get().clear();
+        assertThat(versionRepository.countByDiagramId(id)).isEqualTo(45);
+        assertThat(SqlCapture.statements.get()).hasSize(1);
+        assertThat(SqlCapture.statements.get().getFirst().toLowerCase(java.util.Locale.ROOT)).contains("count(").doesNotContain(".data", "fetch first");
+        assertThat(versionRepository.countByDiagramId(UUID.randomUUID())).isZero();
         SqlCapture.statements.remove();
     }
 

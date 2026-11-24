@@ -6,6 +6,7 @@ import com.diagramio.domain.version.DiagramVersionSummary;
 import com.diagramio.domain.version.DiagramVersionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,8 +47,14 @@ public class DiagramVersionRepositoryAdapter implements DiagramVersionRepository
     }
 
     @Override
-    public List<DiagramVersionSummary> findByDiagramId(UUID diagramId) {
-        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId);
+    public List<DiagramVersionSummary> findByDiagramId(UUID diagramId, int page, int size) {
+        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId,
+                PageRequest.of(page, size));
+    }
+
+    @Override
+    public long countByDiagramId(UUID diagramId) {
+        return jpaRepository.countByDiagramId(diagramId);
     }
 
     @Override

@@ -84,7 +84,7 @@ class VersionE2eTest extends E2eTestBase {
         Actor a = registerAndLogin();
         String id = createDiagramId(a);
         assertError(post(versions(id)).bearer(a.accessToken()).json(obj("note", "n".repeat(256))).send(), 400);
-        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json())).isEmpty();
+        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"))).isEmpty();
     }
 
     @Test
@@ -104,7 +104,7 @@ class VersionE2eTest extends E2eTestBase {
         setData(a, id, dataWith("NEW"));
         Res r = post(versions(id)).bearer(a.accessToken()).json(obj("note", "x", "version", d.path("version").asInt())).send();
         assertError(r, 409);
-        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json())).isEmpty();
+        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"))).isEmpty();
     }
 
     @Test
@@ -180,7 +180,7 @@ class VersionE2eTest extends E2eTestBase {
             }
         }
         pool.shutdown();
-        List<JsonNode> list = items(get(versions(id)).bearer(a.accessToken()).send().json());
+        List<JsonNode> list = items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"));
         assertThat(list).hasSize(numbers.size());
     }
 
@@ -195,8 +195,10 @@ class VersionE2eTest extends E2eTestBase {
         createVersion(a, id, "third");
         Res r = get(versions(id)).bearer(a.accessToken()).send();
         assertStatus(r, 200);
-        assertThat(r.json().isArray()).as("openapi: array of DiagramVersionSummaryResponse").isTrue();
-        List<JsonNode> list = items(r.json());
+        assertThat(r.json().path("page").asInt()).isZero();
+        assertThat(r.json().path("size").asInt()).isEqualTo(10);
+        assertThat(r.json().path("totalElements").asInt()).isEqualTo(3);
+        List<JsonNode> list = items(r.json().path("content"));
         assertThat(list).hasSize(3);
         assertThat(list.get(0).path("note").asText()).isEqualTo("third");
         assertThat(list.get(2).path("note").asText()).isEqualTo("first");
@@ -216,7 +218,7 @@ class VersionE2eTest extends E2eTestBase {
         String token = shareToken(a, id, "view");
         Res r = get(versions(id)).share(token).send();
         assertStatus(r, 200);
-        assertThat(items(r.json())).hasSize(1);
+        assertThat(items(r.json().path("content"))).hasSize(1);
     }
 
     @Test
@@ -436,7 +438,7 @@ class VersionE2eTest extends E2eTestBase {
         JsonNode v1After = get(versions(id) + "/" + v1.path("id").asText()).bearer(a.accessToken()).send().json();
         assertThat(v1After.path("data")).isEqualTo(dataWith("OLD"));
         assertThat(v1After.path("note").asText()).isEqualTo("old");
-        List<JsonNode> list = items(get(versions(id)).bearer(a.accessToken()).send().json());
+        List<JsonNode> list = items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"));
         assertThat(list).hasSize(2);
         assertThat(list.get(0).path("id").asText()).isEqualTo(backup.path("id").asText());
     }
@@ -501,7 +503,7 @@ class VersionE2eTest extends E2eTestBase {
         String token = shareToken(a, id, "view");
         assertError(post(versions(id) + "/" + v.path("id").asText() + "/restore").share(token).send(), 403);
         assertThat(getDiagram(a, id).path("data")).isEqualTo(dataWith("NEW"));
-        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json())).hasSize(1);
+        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"))).hasSize(1);
     }
 
     @Test
@@ -514,7 +516,7 @@ class VersionE2eTest extends E2eTestBase {
         setData(a, id, dataWith("NEW"));
         assertError(post(versions(id) + "/" + v.path("id").asText() + "/restore").bearer(b.accessToken()).send(), 403);
         assertThat(getDiagram(a, id).path("data")).isEqualTo(dataWith("NEW"));
-        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json())).hasSize(1);
+        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"))).hasSize(1);
     }
 
     @Test
@@ -530,7 +532,7 @@ class VersionE2eTest extends E2eTestBase {
         Actor a = registerAndLogin();
         String id = createDiagramId(a);
         assertError(post(versions(id) + "/" + UUID.randomUUID() + "/restore").bearer(a.accessToken()).send(), 404);
-        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json())).isEmpty();
+        assertThat(items(get(versions(id)).bearer(a.accessToken()).send().json().path("content"))).isEmpty();
     }
 
     @Test
@@ -543,7 +545,7 @@ class VersionE2eTest extends E2eTestBase {
         setData(a, d2, dataWith("D2"));
         assertError(post(versions(d2) + "/" + v.path("id").asText() + "/restore").bearer(a.accessToken()).send(), 404);
         assertThat(getDiagram(a, d2).path("data")).isEqualTo(dataWith("D2"));
-        assertThat(items(get(versions(d2)).bearer(a.accessToken()).send().json())).isEmpty();
+        assertThat(items(get(versions(d2)).bearer(a.accessToken()).send().json().path("content"))).isEmpty();
     }
 
     @Test
@@ -552,4 +554,41 @@ class VersionE2eTest extends E2eTestBase {
         assertError(post(versions(UUID.randomUUID().toString()) + "/" + UUID.randomUUID() + "/restore")
                 .bearer(a.accessToken()).send(), 404);
     }
+
+    @Test
+    void historyPaginationContractAndInvalidParameters() {
+        Actor a = registerAndLogin();
+        String id = createDiagramId(a);
+        Res empty = get(versions(id)).bearer(a.accessToken()).send();
+        assertStatus(empty, 200);
+        assertThat(empty.json().path("totalPages").asInt()).isZero();
+        for (int i = 1; i <= 25; i++) createVersion(a, id, "v" + i);
+        var numbers = new java.util.ArrayList<Integer>();
+        for (int page = 0; page <= 3; page++) {
+            Res response = get(versions(id) + "?page=" + page + "&size=10").bearer(a.accessToken()).send();
+            assertStatus(response, 200);
+            assertThat(response.json().path("page").asInt()).isEqualTo(page);
+            assertThat(response.json().path("size").asInt()).isEqualTo(10);
+            assertThat(response.json().path("totalElements").asInt()).isEqualTo(25);
+            assertThat(response.json().path("totalPages").asInt()).isEqualTo(3);
+            var rows = items(response.json().path("content"));
+            assertThat(rows).hasSize(page < 2 ? 10 : page == 2 ? 5 : 0);
+            rows.forEach(v -> numbers.add(v.path("versionNumber").asInt()));
+        }
+        assertThat(numbers).containsExactlyElementsOf(java.util.stream.IntStream.iterate(25, n -> n - 1).limit(25).boxed().toList());
+        for (String query : java.util.List.of("page=-1", "size=0", "size=-1", "size=101", "page=abc", "size=abc", "page=2147483648")) {
+            assertError(get(versions(id) + "?" + query).bearer(a.accessToken()).send(), 400);
+        }
+        for (int size : new int[]{1, 100}) {
+            assertStatus(get(versions(id) + "?size=" + size).bearer(a.accessToken()).send(), 200);
+        }
+        Res first = get(versions(id)).bearer(a.accessToken()).send();
+        assertThat(items(first.json().path("content"))).hasSize(10);
+        assertThat(first.json().path("size").asInt()).isEqualTo(10);
+        assertThat(first.json().path("totalPages").asInt()).isEqualTo(3);
+        Res far = get(versions(id) + "?page=2147483647&size=100").bearer(a.accessToken()).send();
+        assertStatus(far, 200);
+        assertThat(items(far.json().path("content"))).isEmpty();
+    }
+
 }
