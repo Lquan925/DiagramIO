@@ -10,3 +10,5 @@ docs/
 # Không đưa bí mật vào image (cấu hình được truyền qua docker-compose.yml)
 .env
 .env.*
+# Deployment configuration and its local secrets are not build inputs.
+deploy/
