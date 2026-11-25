@@ -6,7 +6,6 @@ import com.diagramio.domain.access.Permission;
 import com.diagramio.domain.exception.InvalidInputException;
 import com.diagramio.domain.exception.OptimisticLockConflictException;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /** Domain rules for diagram management. This class intentionally has no framework dependency. */
@@ -76,23 +75,15 @@ public class DiagramService {
     }
 
     /** diagramType null = mọi loại. */
-    public List<Diagram> getDiagramsByOwner(UUID ownerId, DiagramType diagramType, String title,
+    public DiagramPage getDiagramsByOwner(UUID ownerId, DiagramType diagramType, String title,
                                             int page, int size) {
         validatePage(page, size);
         return repository.findByOwnerId(ownerId, diagramType, normalizeFilter(title), page, size);
     }
 
-    public long countDiagramsByOwner(UUID ownerId, DiagramType diagramType, String title) {
-        return repository.countByOwnerId(ownerId, diagramType, normalizeFilter(title));
-    }
-
-    public List<Diagram> getPublicDiagrams(int page, int size) {
+    public DiagramPage getPublicDiagrams(int page, int size) {
         validatePage(page, size);
         return repository.findPublicDiagrams(page, size);
-    }
-
-    public long countPublicDiagrams() {
-        return repository.countPublicDiagrams();
     }
 
     private void checkVersion(UUID id, Integer requestedVersion, Integer currentVersion) {

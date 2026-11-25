@@ -11,6 +11,7 @@ import com.diagramio.config.OpenApiConfig;
 import com.diagramio.domain.access.Caller;
 import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramData;
+import com.diagramio.domain.diagram.DiagramPage;
 import com.diagramio.domain.diagram.DiagramService;
 import com.diagramio.domain.diagram.DiagramType;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,9 +65,8 @@ public class DiagramController {
             @RequestParam(defaultValue = "20") int size,
             @CurrentUser UUID ownerId) {
         DiagramType typeFilter = diagramType == null || diagramType.isBlank() ? null : DiagramType.from(diagramType);
-        List<Diagram> diagrams = diagramService.getDiagramsByOwner(ownerId, typeFilter, title, page, size);
-        long total = diagramService.countDiagramsByOwner(ownerId, typeFilter, title);
-        return pageResponse(diagrams, page, size, total);
+        DiagramPage result = diagramService.getDiagramsByOwner(ownerId, typeFilter, title, page, size);
+        return pageResponse(result, page, size);
     }
 
     @PostMapping
@@ -96,8 +96,8 @@ public class DiagramController {
     public PageResponse<DiagramSummaryResponse> getPublicDiagrams(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        List<Diagram> diagrams = diagramService.getPublicDiagrams(page, size);
-        return pageResponse(diagrams, page, size, diagramService.countPublicDiagrams());
+        DiagramPage result = diagramService.getPublicDiagrams(page, size);
+        return pageResponse(result, page, size);
     }
 
     @GetMapping("/{id}")
@@ -148,10 +148,11 @@ public class DiagramController {
     }
 
     private PageResponse<DiagramSummaryResponse> pageResponse(
-            List<Diagram> diagrams, int page, int size, long total) {
-        List<DiagramSummaryResponse> content = diagrams.stream()
+            DiagramPage result, int page, int size) {
+        List<DiagramSummaryResponse> content = result.content().stream()
                 .map(DiagramSummaryResponse::from)
                 .toList();
+        long total = result.totalElements();
         int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / size);
         return new PageResponse<>(content, page, size, total, totalPages);
     }

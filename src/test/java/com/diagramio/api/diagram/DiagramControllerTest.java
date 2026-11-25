@@ -19,6 +19,7 @@ import com.diagramio.domain.access.Caller;
 import com.diagramio.domain.access.ShareRole;
 import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramData;
+import com.diagramio.domain.diagram.DiagramPage;
 import com.diagramio.domain.diagram.DiagramService;
 import com.diagramio.domain.diagram.DiagramType;
 import com.diagramio.domain.exception.DiagramNotFoundException;
@@ -26,6 +27,7 @@ import com.diagramio.domain.exception.ForbiddenException;
 import com.diagramio.domain.exception.OptimisticLockConflictException;
 import com.diagramio.domain.share.ShareService;
 import com.diagramio.infrastructure.security.JwtTokenProvider;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -186,6 +188,45 @@ class DiagramControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nodes").isArray())
                 .andExpect(jsonPath("$.data.edges").isArray());
+    }
+
+    @Test
+    void ownerPagePreservesSummaryAndTotals() throws Exception {
+        when(diagramService.getDiagramsByOwner(USER_ID, DiagramType.ERD, "Orders", 1, 2))
+                .thenReturn(new DiagramPage(List.of(diagram()), 3));
+        mockMvc.perform(get("/api/v1/diagrams").with(user(USER_ID.toString()))
+                        .param("diagramType", "ERD").param("title", "Orders")
+                        .param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(DIAGRAM_ID.toString()))
+                .andExpect(jsonPath("$.content[0].data").doesNotExist())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void emptyOwnerPageRetainsTotal() throws Exception {
+        when(diagramService.getDiagramsByOwner(USER_ID, null, null, 9, 2))
+                .thenReturn(new DiagramPage(List.of(), 3));
+        mockMvc.perform(get("/api/v1/diagrams").with(user(USER_ID.toString()))
+                        .param("page", "9").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void publicEmptyPageIsAnonymousAndHasZeroTotalPages() throws Exception {
+        when(diagramService.getPublicDiagrams(0, 20)).thenReturn(new DiagramPage(List.of(), 0));
+        mockMvc.perform(get("/api/v1/diagrams/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
     }
 
     private Diagram diagram() {
