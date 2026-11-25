@@ -1,9 +1,9 @@
 package com.diagramio.infrastructure.diagram;
 
 import com.diagramio.domain.diagram.Diagram;
-import com.diagramio.domain.diagram.DiagramData;
 import com.diagramio.domain.diagram.DiagramPage;
 import com.diagramio.domain.diagram.DiagramRepository;
+import com.diagramio.domain.diagram.DiagramSummary;
 import com.diagramio.domain.diagram.DiagramType;
 import com.diagramio.domain.exception.OptimisticLockConflictException;
 import jakarta.persistence.EntityManager;
@@ -78,21 +78,23 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
         repository.deleteById(id);
     }
 
-    /** A single SQL returns page content and a total, including for an empty page. */
+    /** A single SQL returns summary metadata and a total, including for an empty page. */
     private DiagramPage findPage(String filter, Map<String, Object> parameters, int page, int size) {
         // Only fixed SQL fragments are interpolated; user input is bound as parameters.
         // NOT MATERIALIZED lets PostgreSQL plan the count and limited page independently.
         String sql = """
                 WITH filtered AS NOT MATERIALIZED (
                     SELECT id, title, diagram_type, version, is_public, owner_id,
-                           updated_by, created_at, updated_at, data
+                           updated_by, created_at, updated_at
                     FROM {h-schema}diagrams WHERE %s
                 )
                 SELECT p.id, p.title, p.diagram_type, p.version, p.is_public, p.owner_id,
-                       p.updated_by, p.created_at, p.updated_at, CAST(p.data AS text), totals.total
+                       p.updated_by, p.created_at, p.updated_at, totals.total
                 FROM (SELECT count(*) AS total FROM filtered) totals
                 LEFT JOIN (
-                    SELECT * FROM filtered
+                    SELECT id, title, diagram_type, version, is_public, owner_id,
+                           updated_by, created_at, updated_at
+                    FROM filtered
                     ORDER BY updated_at DESC, id DESC
                     LIMIT :size OFFSET :offset
                 ) p ON true
@@ -104,17 +106,17 @@ public class DiagramRepositoryAdapter implements DiagramRepository {
         query.setParameter("offset", (long) page * size);
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
-        var content = new ArrayList<Diagram>();
+        var content = new ArrayList<DiagramSummary>();
         for (Object[] row : rows) {
             // LEFT JOIN preserves the total-only row when the requested page is empty.
             if (row[0] != null) {
-                content.add(new Diagram((UUID) row[0], (String) row[1],
-                        DiagramType.valueOf((String) row[2]), DiagramData.fromStorage((String) row[9]),
+                content.add(new DiagramSummary((UUID) row[0], (String) row[1],
+                        DiagramType.valueOf((String) row[2]),
                         ((Number) row[3]).intValue(), (Boolean) row[4], (UUID) row[5], (UUID) row[6],
                         toInstant(row[7]), toInstant(row[8])));
             }
         }
-        return new DiagramPage(content, ((Number) rows.getFirst()[10]).longValue());
+        return new DiagramPage(content, ((Number) rows.getFirst()[9]).longValue());
     }
 
     private Instant toInstant(Object value) {

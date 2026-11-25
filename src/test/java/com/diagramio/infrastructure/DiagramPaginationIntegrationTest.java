@@ -2,7 +2,7 @@ package com.diagramio.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.diagramio.domain.diagram.Diagram;
+import com.diagramio.domain.diagram.DiagramSummary;
 import com.diagramio.domain.diagram.DiagramPage;
 import com.diagramio.domain.diagram.DiagramType;
 import com.diagramio.infrastructure.diagram.DiagramMapper;
@@ -106,8 +106,16 @@ class DiagramPaginationIntegrationTest {
         assertOwner(DiagramType.UML, "inventory");
         assertOwner(null, "missing");
         SqlCapture.clear();
-        assertThat(diagrams.findByOwnerId(OWNER, null, "", 0, 2).content().getFirst()
-                .getData().json()).contains("nodes");
+        DiagramSummary first = diagrams.findByOwnerId(OWNER, null, "", 0, 2).content().getFirst();
+        assertThat(first.id()).isEqualTo(id(3));
+        assertThat(first.title()).isEqualTo("Inventory");
+        assertThat(first.diagramType()).isEqualTo(DiagramType.ERD);
+        assertThat(first.version()).isEqualTo(1);
+        assertThat(first.isPublic()).isTrue();
+        assertThat(first.ownerId()).isEqualTo(OWNER);
+        assertThat(first.updatedBy()).isNull();
+        assertThat(first.createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        assertThat(first.updatedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         assertOneQuery();
     }
 
@@ -167,9 +175,40 @@ class DiagramPaginationIntegrationTest {
         SqlCapture.clear();
         DiagramPage result = diagrams.findByOwnerId(OWNER, null, "", 0, 1);
         assertIds(result, 1);
-        assertThat(result.content().getFirst().getUpdatedAt()).isNull();
-        assertThat(result.content().getFirst().getCreatedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+        assertThat(result.content().getFirst().updatedAt()).isNull();
+        assertThat(result.content().getFirst().createdAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         assertOneQuery();
+    }
+
+    @Test
+    void summaryListsDoNotDependOnStoredDiagramContent() {
+        // Neither legacy content nor a large valid payload should be read for a summary list.
+        jdbc.update("UPDATE " + SCHEMA + ".diagrams SET data = '{}'::jsonb WHERE id = ?", id(2));
+        String largePayload = "{\"nodes\":[{\"id\":\"large-node\",\"label\":\""
+                + "x".repeat(128 * 1024) + "\"}],\"edges\":[]}";
+        jdbc.update("UPDATE " + SCHEMA + ".diagrams SET data = CAST(? AS jsonb) WHERE id = ?",
+                largePayload, id(3));
+        SqlCapture.clear();
+        DiagramPage ownerPage = diagrams.findByOwnerId(OWNER, null, "", 0, 20);
+        assertIds(ownerPage, 3, 2, 1);
+        assertThat(ownerPage.totalElements()).isEqualTo(3);
+        assertOneQuery();
+
+        SqlCapture.clear();
+        DiagramPage publicPage = diagrams.findPublicDiagrams(0, 20);
+        assertIds(publicPage, 4, 3, 2);
+        assertThat(publicPage.totalElements()).isEqualTo(3);
+        assertOneQuery();
+    }
+
+    @Test
+    void detailStillLoadsStoredDiagramContent() {
+        jdbc.update("UPDATE " + SCHEMA + ".diagrams SET data = CAST(? AS jsonb) WHERE id = ?",
+                "{\"nodes\":[{\"id\":\"detail-node\"}],\"edges\":[]}", id(3));
+        SqlCapture.clear();
+        assertThat(diagrams.findById(id(3)).orElseThrow().getData().json()).contains("detail-node");
+        assertThat(SqlCapture.SQL.get()).hasSize(1);
+        assertThat(SqlCapture.SQL.get().getFirst()).containsPattern("\\bdata\\b");
     }
 
     private void assertOwner(DiagramType type, String title, long... ids) {
@@ -181,7 +220,7 @@ class DiagramPaginationIntegrationTest {
     }
 
     private void assertIds(DiagramPage result, long... ids) {
-        assertThat(result.content()).extracting(Diagram::getId)
+        assertThat(result.content()).extracting(DiagramSummary::id)
                 .containsExactly(java.util.Arrays.stream(ids).mapToObj(DiagramPaginationIntegrationTest::id)
                         .toArray(UUID[]::new));
     }
@@ -189,7 +228,8 @@ class DiagramPaginationIntegrationTest {
     private void assertOneQuery() {
         assertThat(SqlCapture.SQL.get()).hasSize(1);
         assertThat(SqlCapture.SQL.get().getFirst()).startsWith("with filtered")
-                .contains("count(*)", "left join", "limit", "offset");
+                .contains("count(*)", "left join", "limit", "offset")
+                .doesNotContainPattern("\\bdata\\b");
     }
 
     private void insert(long number, String title, String type, boolean isPublic, UUID owner) {

@@ -21,12 +21,14 @@ import com.diagramio.domain.diagram.Diagram;
 import com.diagramio.domain.diagram.DiagramData;
 import com.diagramio.domain.diagram.DiagramPage;
 import com.diagramio.domain.diagram.DiagramService;
+import com.diagramio.domain.diagram.DiagramSummary;
 import com.diagramio.domain.diagram.DiagramType;
 import com.diagramio.domain.exception.DiagramNotFoundException;
 import com.diagramio.domain.exception.ForbiddenException;
 import com.diagramio.domain.exception.OptimisticLockConflictException;
 import com.diagramio.domain.share.ShareService;
 import com.diagramio.infrastructure.security.JwtTokenProvider;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -193,13 +195,21 @@ class DiagramControllerTest {
     @Test
     void ownerPagePreservesSummaryAndTotals() throws Exception {
         when(diagramService.getDiagramsByOwner(USER_ID, DiagramType.ERD, "Orders", 1, 2))
-                .thenReturn(new DiagramPage(List.of(diagram()), 3));
+                .thenReturn(new DiagramPage(List.of(summary(false)), 3));
         mockMvc.perform(get("/api/v1/diagrams").with(user(USER_ID.toString()))
                         .param("diagramType", "ERD").param("title", "Orders")
                         .param("page", "1").param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(DIAGRAM_ID.toString()))
+                .andExpect(jsonPath("$.content[0].title").value("Orders"))
+                .andExpect(jsonPath("$.content[0].diagramType").value("ERD"))
+                .andExpect(jsonPath("$.content[0].version").value(1))
+                .andExpect(jsonPath("$.content[0].isPublic").value(false))
+                .andExpect(jsonPath("$.content[0].ownerId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.content[0].updatedBy").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.content[0].createdAt").value("2026-01-01T00:00:00Z"))
+                .andExpect(jsonPath("$.content[0].updatedAt").value("2026-01-02T00:00:00Z"))
                 .andExpect(jsonPath("$.content[0].data").doesNotExist())
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(2))
@@ -227,6 +237,32 @@ class DiagramControllerTest {
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
+    void publicPageIsAnonymousAndContainsSummaryMetadataOnly() throws Exception {
+        when(diagramService.getPublicDiagrams(0, 20))
+                .thenReturn(new DiagramPage(List.of(summary(true)), 1));
+        mockMvc.perform(get("/api/v1/diagrams/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(DIAGRAM_ID.toString()))
+                .andExpect(jsonPath("$.content[0].title").value("Orders"))
+                .andExpect(jsonPath("$.content[0].diagramType").value("ERD"))
+                .andExpect(jsonPath("$.content[0].version").value(1))
+                .andExpect(jsonPath("$.content[0].isPublic").value(true))
+                .andExpect(jsonPath("$.content[0].ownerId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.content[0].updatedBy").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.content[0].createdAt").value("2026-01-01T00:00:00Z"))
+                .andExpect(jsonPath("$.content[0].updatedAt").value("2026-01-02T00:00:00Z"))
+                .andExpect(jsonPath("$.content[0].data").doesNotExist())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    private DiagramSummary summary(boolean isPublic) {
+        return new DiagramSummary(DIAGRAM_ID, "Orders", DiagramType.ERD, 1, isPublic, USER_ID, USER_ID,
+                Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-02T00:00:00Z"));
     }
 
     private Diagram diagram() {
