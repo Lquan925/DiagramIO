@@ -249,7 +249,7 @@ Baseline cố ý chưa tối ưu. Các hướng dưới đây đều đo đượ
 | Thuộc tính | Hiện trạng | Hướng cải tiến |
 |---|---|---|
 | Hiệu năng truy vấn | Chỉ có index trên `diagrams.owner_id`. Tìm theo tên dùng `LIKE '%...%'` nên phải quét toàn bộ sơ đồ của người dùng | Thêm index cho `diagram_shares.diagram_id` và `diagrams.is_public`; dùng `pg_trgm` cho tìm kiếm theo tên |
-| Hiệu năng danh sách | API danh sách không trả `data` nhưng vẫn đọc cả cột này (tới 2 MB mỗi sơ đồ). Mỗi lần lấy danh sách có thể chạy tới 4 câu lệnh (hai lần SELECT, hai lần COUNT) | Chỉ đọc các cột cần thiết; gộp phần đếm vào một câu lệnh hoặc chuyển sang phân trang theo con trỏ, kèm sắp xếp theo `updated_at` |
+| Hiệu năng danh sách | Danh sách cá nhân và công khai chỉ đọc 9 cột metadata, không đọc `data`; một SQL trả cả danh sách và tổng số, kể cả khi trang rỗng. Kết quả được ánh xạ sang `DiagramSummary`, sắp xếp `updated_at DESC, id DESC` | Đo hiệu năng trên dữ liệu thực; cân nhắc phân trang theo con trỏ khi offset lớn |
 | Hiệu năng đọc | Mọi lần xem sơ đồ và mọi request có `X-Share-Token` đều truy vấn CSDL | Cache sơ đồ hay được đọc và kết quả tra token (Caffeine khi chạy một bản, Redis khi chạy nhiều bản), xóa cache khi sơ đồ được sửa hoặc link bị thu hồi |
 | Dung lượng dữ liệu | Mỗi lần sửa gửi lại toàn bộ `data`; mỗi phiên bản lưu nguyên một bản sao `data` | Nén response bằng gzip; chỉ gửi phần thay đổi (JSON Patch); lưu phiên bản dạng phần khác biệt hoặc nén |
 | Khả năng mở rộng | Chạy một bản app. App không giữ trạng thái phiên (JWT), khóa và `version` nằm trong CSDL | Chạy nhiều bản app sau load balancer (ví dụ `docker compose up --scale app=3` cùng nginx); khi CSDL thành nút thắt thì thêm bản sao chỉ đọc và chỉnh pool kết nối |
