@@ -1,0 +1,813 @@
+
+=== old_actual / owner ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.00..2.87 rows=20 width=102) (actual time=0.012..0.016 rows=20 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2889.00 rows=20137 width=102) (actual time=0.011..0.014 rows=20 loops=1)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.107 ms
+Execution Time: 0.030 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.388..3.388 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.488..2.179 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.446..0.446 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.102 ms
+Execution Time: 3.413 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.14 rows=1 width=102) (actual time=0.008..0.009 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2889.00 rows=20137 width=102) (actual time=0.008..0.008 rows=1 loops=1)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.072 ms
+Execution Time: 0.016 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.184..3.184 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.391..1.986 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.363..0.363 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.070 ms
+Execution Time: 3.203 ms
+
+=== old_actual / owner_type ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.00..6.28 rows=20 width=102) (actual time=0.006..0.011 rows=20 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..3139.00 rows=10001 width=102) (actual time=0.005..0.009 rows=20 loops=1)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+        Rows Removed by Filter: 20
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.055 ms
+Execution Time: 0.018 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML';
+Aggregate  (cost=2215.88..2215.89 rows=1 width=8) (actual time=2.903..2.903 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=249.82..2190.88 rows=10001 width=16) (actual time=0.374..2.378 rows=10000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: ((diagram_type)::text = 'UML'::text)
+        Rows Removed by Filter: 10000
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.348..0.348 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.070 ms
+Execution Time: 2.922 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.31 rows=1 width=102) (actual time=0.008..0.008 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..3139.00 rows=10001 width=102) (actual time=0.007..0.007 rows=1 loops=1)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+        Rows Removed by Filter: 1
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.073 ms
+Execution Time: 0.017 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML';
+Aggregate  (cost=2215.88..2215.89 rows=1 width=8) (actual time=3.226..3.226 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=249.82..2190.88 rows=10001 width=16) (actual time=0.335..2.699 rows=10000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: ((diagram_type)::text = 'UML'::text)
+        Rows Removed by Filter: 10000
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.297..0.297 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.073 ms
+Execution Time: 3.248 ms
+
+=== old_actual / owner_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 20 rows only;
+Limit  (cost=247.32..2238.72 rows=6 width=102) (actual time=0.581..1.017 rows=20 loops=1)
+  Buffers: shared hit=50
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=102) (actual time=0.580..1.014 rows=20 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Rows Removed by Filter: 2000
+        Heap Blocks: exact=33
+        Buffers: shared hit=50
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.515..0.516 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.119 ms
+Execution Time: 1.045 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2238.73..2238.74 rows=1 width=8) (actual time=5.778..5.779 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=16) (actual time=0.573..5.748 rows=198 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Rows Removed by Filter: 19802
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.515..0.515 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.103 ms
+Execution Time: 5.814 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..564.83 rows=1 width=102) (actual time=0.037..0.038 rows=1 loops=1)
+  Buffers: shared hit=2
+  ->  Seq Scan on diagrams  (cost=0.00..3389.00 rows=6 width=102) (actual time=0.036..0.036 rows=1 loops=1)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 100
+        Buffers: shared hit=2
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.174 ms
+Execution Time: 0.051 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2238.73..2238.74 rows=1 width=8) (actual time=4.202..4.203 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=16) (actual time=0.482..4.183 rows=198 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Rows Removed by Filter: 19802
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.428..0.428 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.112 ms
+Execution Time: 4.230 ms
+
+=== old_actual / owner_type_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 20 rows only;
+Limit  (cost=247.32..2289.06 rows=3 width=102) (actual time=1.031..2.786 rows=20 loops=1)
+  Buffers: shared hit=83
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=102) (actual time=1.029..2.777 rows=20 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 4020
+        Heap Blocks: exact=66
+        Buffers: shared hit=83
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.865..0.866 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.259 ms
+Execution Time: 2.849 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2289.07..2289.08 rows=1 width=8) (actual time=3.165..3.166 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=16) (actual time=0.481..3.152 rows=99 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 19901
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.420..0.420 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.133 ms
+Execution Time: 3.197 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 1 rows only;
+Limit  (cost=247.32..927.90 rows=1 width=102) (actual time=0.583..0.584 rows=1 loops=1)
+  Buffers: shared hit=21
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=102) (actual time=0.583..0.583 rows=1 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 201
+        Heap Blocks: exact=4
+        Buffers: shared hit=21
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.502..0.502 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.093 ms
+Execution Time: 0.602 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2289.07..2289.08 rows=1 width=8) (actual time=4.483..4.484 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=16) (actual time=0.590..4.464 rows=99 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 19901
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.513..0.513 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.112 ms
+Execution Time: 4.511 ms
+
+=== old_actual / public ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where is_public=true offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.00..5.31 rows=20 width=102) (actual time=0.126..0.145 rows=20 loops=1)
+  Buffers: shared hit=4
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=102) (actual time=0.125..0.142 rows=20 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 180
+        Buffers: shared hit=4
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.073 ms
+Execution Time: 0.155 ms
+select count(id) from diagrams where is_public=true;
+Aggregate  (cost=2663.85..2663.86 rows=1 width=8) (actual time=7.833..7.834 rows=1 loops=1)
+  Buffers: shared hit=1639
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=16) (actual time=0.005..7.271 rows=10000 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 90000
+        Buffers: shared hit=1639
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.038 ms
+Execution Time: 7.846 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where is_public=true offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.27 rows=1 width=102) (actual time=0.009..0.009 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=102) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 9
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.073 ms
+Execution Time: 0.019 ms
+select count(id) from diagrams where is_public=true;
+Aggregate  (cost=2663.85..2663.86 rows=1 width=8) (actual time=21.944..21.945 rows=1 loops=1)
+  Buffers: shared hit=1639
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=16) (actual time=0.008..20.289 rows=10000 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 90000
+        Buffers: shared hit=1639
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.054 ms
+Execution Time: 21.968 ms
+
+=== old_actual / owner_deep_page ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 10000 rows fetch first 20 rows only;
+Limit  (cost=1191.28..1193.16 rows=20 width=102) (actual time=2.228..2.232 rows=20 loops=1)
+  Buffers: shared hit=181
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=102) (actual time=0.555..1.838 rows=10020 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=164
+        Buffers: shared hit=181
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.501..0.501 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.066 ms
+Execution Time: 2.250 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.570..3.571 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.895..2.385 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.865..0.865 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.240 ms
+Execution Time: 3.622 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.14 rows=1 width=102) (actual time=0.026..0.027 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2889.00 rows=20137 width=102) (actual time=0.024..0.024 rows=1 loops=1)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.208 ms
+Execution Time: 0.053 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=9.289..9.291 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=1.236..5.480 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=1.149..1.149 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.164 ms
+Execution Time: 9.353 ms
+
+=== old_with_sort / owner ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=2678.91..2678.96 rows=20 width=102) (actual time=8.919..8.922 rows=20 loops=1)
+  Buffers: shared hit=344
+  ->  Sort  (cost=2678.91..2729.25 rows=20137 width=102) (actual time=8.916..8.918 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=344
+        ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=102) (actual time=0.404..3.462 rows=20000 loops=1)
+              Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Heap Blocks: exact=327
+              Buffers: shared hit=344
+              ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.373..0.374 rows=20000 loops=1)
+                    Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+                    Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.133 ms
+Execution Time: 8.963 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.561..3.562 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.425..2.364 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.394..0.394 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.144 ms
+Execution Time: 3.600 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.14 rows=1 width=102) (actual time=0.010..0.010 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2889.00 rows=20137 width=102) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.126 ms
+Execution Time: 0.021 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.188..3.189 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.396..2.012 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.366..0.366 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.096 ms
+Execution Time: 3.210 ms
+
+=== old_with_sort / owner_type ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=2457.00..2457.05 rows=20 width=102) (actual time=8.288..8.294 rows=20 loops=1)
+  Buffers: shared hit=344
+  ->  Sort  (cost=2457.00..2482.00 rows=10001 width=102) (actual time=8.286..8.289 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=344
+        ->  Bitmap Heap Scan on diagrams  (cost=249.82..2190.88 rows=10001 width=102) (actual time=0.566..4.483 rows=10000 loops=1)
+              Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Filter: ((diagram_type)::text = 'UML'::text)
+              Rows Removed by Filter: 10000
+              Heap Blocks: exact=327
+              Buffers: shared hit=344
+              ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.527..0.527 rows=20000 loops=1)
+                    Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+                    Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.125 ms
+Execution Time: 8.330 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML';
+Aggregate  (cost=2215.88..2215.89 rows=1 width=8) (actual time=4.307..4.308 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=249.82..2190.88 rows=10001 width=16) (actual time=0.597..3.563 rows=10000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: ((diagram_type)::text = 'UML'::text)
+        Rows Removed by Filter: 10000
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.552..0.552 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.230 ms
+Execution Time: 4.365 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.31 rows=1 width=102) (actual time=0.013..0.013 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..3139.00 rows=10001 width=102) (actual time=0.012..0.012 rows=1 loops=1)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+        Rows Removed by Filter: 1
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.133 ms
+Execution Time: 0.025 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML';
+Aggregate  (cost=2215.88..2215.89 rows=1 width=8) (actual time=3.489..3.490 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=249.82..2190.88 rows=10001 width=16) (actual time=0.568..2.906 rows=10000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: ((diagram_type)::text = 'UML'::text)
+        Rows Removed by Filter: 10000
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.528..0.529 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.111 ms
+Execution Time: 3.518 ms
+
+=== old_with_sort / owner_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=2238.80..2238.81 rows=6 width=102) (actual time=3.588..3.591 rows=20 loops=1)
+  Buffers: shared hit=344
+  ->  Sort  (cost=2238.80..2238.81 rows=6 width=102) (actual time=3.587..3.588 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 32kB
+        Buffers: shared hit=344
+        ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=102) (actual time=0.242..3.521 rows=198 loops=1)
+              Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+              Rows Removed by Filter: 19802
+              Heap Blocks: exact=327
+              Buffers: shared hit=344
+              ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.203..0.204 rows=20000 loops=1)
+                    Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+                    Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.079 ms
+Execution Time: 3.608 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2238.73..2238.74 rows=1 width=8) (actual time=8.137..8.138 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=16) (actual time=0.586..8.095 rows=198 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Rows Removed by Filter: 19802
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.519..0.519 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.134 ms
+Execution Time: 8.171 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..564.83 rows=1 width=102) (actual time=0.088..0.089 rows=1 loops=1)
+  Buffers: shared hit=2
+  ->  Seq Scan on diagrams  (cost=0.00..3389.00 rows=6 width=102) (actual time=0.086..0.087 rows=1 loops=1)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 100
+        Buffers: shared hit=2
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.279 ms
+Execution Time: 0.117 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2238.73..2238.74 rows=1 width=8) (actual time=7.446..7.447 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2238.72 rows=6 width=16) (actual time=0.411..7.412 rows=198 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Rows Removed by Filter: 19802
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.366..0.366 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.085 ms
+Execution Time: 7.476 ms
+
+=== old_with_sort / owner_type_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=2289.08..2289.09 rows=3 width=102) (actual time=3.182..3.185 rows=20 loops=1)
+  Buffers: shared hit=344
+  ->  Sort  (cost=2289.08..2289.09 rows=3 width=102) (actual time=3.181..3.182 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 32kB
+        Buffers: shared hit=344
+        ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=102) (actual time=0.412..3.136 rows=99 loops=1)
+              Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+              Rows Removed by Filter: 19901
+              Heap Blocks: exact=327
+              Buffers: shared hit=344
+              ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.354..0.354 rows=20000 loops=1)
+                    Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+                    Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.099 ms
+Execution Time: 3.206 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2289.07..2289.08 rows=1 width=8) (actual time=2.973..2.973 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=16) (actual time=0.396..2.954 rows=99 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 19901
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.343..0.343 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.087 ms
+Execution Time: 2.994 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\' offset 0 rows fetch first 1 rows only;
+Limit  (cost=247.32..927.90 rows=1 width=102) (actual time=0.403..0.403 rows=1 loops=1)
+  Buffers: shared hit=21
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=102) (actual time=0.402..0.403 rows=1 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 201
+        Heap Blocks: exact=4
+        Buffers: shared hit=21
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.347..0.347 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.080 ms
+Execution Time: 0.420 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=2289.07..2289.08 rows=1 width=8) (actual time=3.551..3.552 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=247.32..2289.06 rows=3 width=16) (actual time=0.392..3.536 rows=99 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Filter: (((diagram_type)::text = 'UML'::text) AND (upper((title)::text) ~~ '%NEEDLE%'::text))
+        Rows Removed by Filter: 19901
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.340..0.340 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.069 ms
+Execution Time: 3.572 ms
+
+=== old_with_sort / public ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where is_public=true order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=2903.50..2903.55 rows=20 width=102) (actual time=17.964..17.968 rows=20 loops=1)
+  Buffers: shared hit=1639
+  ->  Sort  (cost=2903.50..2928.35 rows=9940 width=102) (actual time=17.961..17.963 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=1639
+        ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=102) (actual time=0.012..13.936 rows=10000 loops=1)
+              Filter: is_public
+              Rows Removed by Filter: 90000
+              Buffers: shared hit=1639
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.129 ms
+Execution Time: 17.994 ms
+select count(id) from diagrams where is_public=true;
+Aggregate  (cost=2663.85..2663.86 rows=1 width=8) (actual time=8.224..8.225 rows=1 loops=1)
+  Buffers: shared hit=1639
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=16) (actual time=0.009..7.721 rows=10000 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 90000
+        Buffers: shared hit=1639
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.102 ms
+Execution Time: 8.246 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where is_public=true offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.27 rows=1 width=102) (actual time=0.010..0.010 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=102) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 9
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.096 ms
+Execution Time: 0.022 ms
+select count(id) from diagrams where is_public=true;
+Aggregate  (cost=2663.85..2663.86 rows=1 width=8) (actual time=8.033..8.034 rows=1 loops=1)
+  Buffers: shared hit=1639
+  ->  Seq Scan on diagrams  (cost=0.00..2639.00 rows=9940 width=16) (actual time=0.005..7.526 rows=10000 loops=1)
+        Filter: is_public
+        Rows Removed by Filter: 90000
+        Buffers: shared hit=1639
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.065 ms
+Execution Time: 8.049 ms
+
+=== old_with_sort / owner_deep_page ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid order by updated_at desc,id desc offset 10000 rows fetch first 20 rows only;
+Limit  (cost=3606.92..3606.97 rows=20 width=102) (actual time=17.785..17.789 rows=20 loops=1)
+  Buffers: shared hit=344
+  ->  Sort  (cost=3581.92..3632.26 rows=20137 width=102) (actual time=16.282..17.313 rows=10020 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: quicksort  Memory: 3282kB
+        Buffers: shared hit=344
+        ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=102) (actual time=0.397..5.267 rows=20000 loops=1)
+              Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Heap Blocks: exact=327
+              Buffers: shared hit=344
+              ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.367..0.368 rows=20000 loops=1)
+                    Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+                    Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.095 ms
+Execution Time: 18.238 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.498..3.498 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.598..2.286 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.554..0.554 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.162 ms
+Execution Time: 3.542 ms
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at,data from diagrams where owner_id=md5('owner1')::uuid offset 0 rows fetch first 1 rows only;
+Limit  (cost=0.00..0.14 rows=1 width=102) (actual time=0.010..0.010 rows=1 loops=1)
+  Buffers: shared hit=1
+  ->  Seq Scan on diagrams  (cost=0.00..2889.00 rows=20137 width=102) (actual time=0.009..0.009 rows=1 loops=1)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=1
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.114 ms
+Execution Time: 0.020 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=2193.41..2193.42 rows=1 width=8) (actual time=3.070..3.071 rows=1 loops=1)
+  Buffers: shared hit=344
+  ->  Bitmap Heap Scan on diagrams  (cost=252.35..2143.07 rows=20137 width=16) (actual time=0.233..1.851 rows=20000 loops=1)
+        Recheck Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Blocks: exact=327
+        Buffers: shared hit=344
+        ->  Bitmap Index Scan on idx_diagrams_owner  (cost=0.00..247.32 rows=20137 width=0) (actual time=0.208..0.208 rows=20000 loops=1)
+              Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Buffers: shared hit=17
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.215 ms
+Execution Time: 3.098 ms
+
+=== optimized / owner ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where owner_id=md5('owner1')::uuid order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.42..7.71 rows=20 width=84) (actual time=0.010..0.015 rows=20 loops=1)
+  Buffers: shared hit=4
+  ->  Index Scan using idx_diagrams_owner_updated_id on diagrams  (cost=0.42..7285.97 rows=19983 width=84) (actual time=0.009..0.012 rows=20 loops=1)
+        Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=4
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.106 ms
+Execution Time: 0.026 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=980.08..980.09 rows=1 width=8) (actual time=3.466..3.467 rows=1 loops=1)
+  Buffers: shared hit=146
+  ->  Index Only Scan using idx_diagrams_owner_updated_id on diagrams  (cost=0.42..930.12 rows=19983 width=16) (actual time=0.009..2.099 rows=20000 loops=1)
+        Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Fetches: 0
+        Buffers: shared hit=146
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.079 ms
+Execution Time: 3.482 ms
+
+=== optimized / owner_type ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.42..14.16 rows=20 width=84) (actual time=0.012..0.017 rows=20 loops=1)
+  Buffers: shared hit=4
+  ->  Index Scan using idx_diagrams_owner_type_updated_id on diagrams  (cost=0.42..6887.48 rows=10023 width=84) (actual time=0.011..0.015 rows=20 loops=1)
+        Index Cond: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+        Buffers: shared hit=4
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.090 ms
+Execution Time: 0.026 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML';
+Aggregate  (cost=561.94..561.95 rows=1 width=8) (actual time=1.538..1.539 rows=1 loops=1)
+  Buffers: shared hit=86
+  ->  Index Only Scan using idx_diagrams_owner_type_updated_id on diagrams  (cost=0.42..536.88 rows=10023 width=16) (actual time=0.010..1.051 rows=10000 loops=1)
+        Index Cond: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND (diagram_type = 'UML'::text))
+        Heap Fetches: 0
+        Buffers: shared hit=86
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.078 ms
+Execution Time: 1.549 ms
+
+=== optimized / owner_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=76.75..76.75 rows=2 width=84) (actual time=0.815..0.818 rows=20 loops=1)
+  Buffers: shared hit=999
+  ->  Sort  (cost=76.75..76.75 rows=2 width=84) (actual time=0.814..0.815 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=999
+        ->  Bitmap Heap Scan on diagrams  (cost=38.91..76.74 rows=2 width=84) (actual time=0.180..0.761 rows=198 loops=1)
+              Recheck Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+              Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+              Rows Removed by Filter: 792
+              Heap Blocks: exact=990
+              Buffers: shared hit=999
+              ->  Bitmap Index Scan on idx_diagrams_title_upper_trgm  (cost=0.00..38.90 rows=10 width=0) (actual time=0.106..0.106 rows=990 loops=1)
+                    Index Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+                    Buffers: shared hit=9
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.079 ms
+Execution Time: 0.837 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=76.74..76.75 rows=1 width=8) (actual time=0.769..0.769 rows=1 loops=1)
+  Buffers: shared hit=999
+  ->  Bitmap Heap Scan on diagrams  (cost=38.91..76.74 rows=2 width=16) (actual time=0.256..0.758 rows=198 loops=1)
+        Recheck Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Filter: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Rows Removed by Filter: 792
+        Heap Blocks: exact=990
+        Buffers: shared hit=999
+        ->  Bitmap Index Scan on idx_diagrams_title_upper_trgm  (cost=0.00..38.90 rows=10 width=0) (actual time=0.168..0.168 rows=990 loops=1)
+              Index Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+              Buffers: shared hit=9
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.103 ms
+Execution Time: 0.790 ms
+
+=== optimized / owner_type_title ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\' order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=76.77..76.78 rows=1 width=84) (actual time=0.967..0.969 rows=20 loops=1)
+  Buffers: shared hit=999
+  ->  Sort  (cost=76.77..76.78 rows=1 width=84) (actual time=0.966..0.967 rows=20 loops=1)
+        Sort Key: updated_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=999
+        ->  Bitmap Heap Scan on diagrams  (cost=38.91..76.76 rows=1 width=84) (actual time=0.273..0.930 rows=99 loops=1)
+              Recheck Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+              Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+              Rows Removed by Filter: 891
+              Heap Blocks: exact=990
+              Buffers: shared hit=999
+              ->  Bitmap Index Scan on idx_diagrams_title_upper_trgm  (cost=0.00..38.90 rows=10 width=0) (actual time=0.177..0.177 rows=990 loops=1)
+                    Index Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+                    Buffers: shared hit=9
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.132 ms
+Execution Time: 0.992 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid and diagram_type='UML' and upper(title) like '%NEEDLE%' escape '\';
+Aggregate  (cost=76.76..76.77 rows=1 width=8) (actual time=1.372..1.374 rows=1 loops=1)
+  Buffers: shared hit=999
+  ->  Bitmap Heap Scan on diagrams  (cost=38.91..76.76 rows=1 width=16) (actual time=0.253..1.361 rows=99 loops=1)
+        Recheck Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+        Filter: ((owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid) AND ((diagram_type)::text = 'UML'::text))
+        Rows Removed by Filter: 891
+        Heap Blocks: exact=990
+        Buffers: shared hit=999
+        ->  Bitmap Index Scan on idx_diagrams_title_upper_trgm  (cost=0.00..38.90 rows=10 width=0) (actual time=0.164..0.164 rows=990 loops=1)
+              Index Cond: (upper((title)::text) ~~ '%NEEDLE%'::text)
+              Buffers: shared hit=9
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.112 ms
+Execution Time: 1.412 ms
+
+=== optimized / public ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where is_public=true order by updated_at desc,id desc offset 0 rows fetch first 20 rows only;
+Limit  (cost=0.29..6.95 rows=20 width=84) (actual time=0.006..0.010 rows=20 loops=1)
+  Buffers: shared hit=6
+  ->  Index Scan using idx_diagrams_public_updated_id on diagrams  (cost=0.29..3319.98 rows=9967 width=84) (actual time=0.005..0.009 rows=20 loops=1)
+        Buffers: shared hit=6
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.052 ms
+Execution Time: 0.017 ms
+select count(id) from diagrams where is_public=true;
+Aggregate  (cost=382.71..382.72 rows=1 width=8) (actual time=1.882..1.883 rows=1 loops=1)
+  Buffers: shared hit=52
+  ->  Index Only Scan using idx_diagrams_public_updated_id on diagrams  (cost=0.29..357.79 rows=9967 width=16) (actual time=0.009..1.104 rows=10000 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=52
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.099 ms
+Execution Time: 1.899 ms
+
+=== optimized / owner_deep_page ===
+select id,title,diagram_type,version,is_public,owner_id,updated_by,created_at,updated_at from diagrams where owner_id=md5('owner1')::uuid order by updated_at desc,id desc offset 10000 rows fetch first 20 rows only;
+Limit  (cost=3646.29..3653.58 rows=20 width=84) (actual time=2.218..2.223 rows=20 loops=1)
+  Buffers: shared hit=513
+  ->  Index Scan using idx_diagrams_owner_updated_id on diagrams  (cost=0.42..7285.97 rows=19983 width=84) (actual time=0.008..1.894 rows=10020 loops=1)
+        Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Buffers: shared hit=513
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.086 ms
+Execution Time: 2.234 ms
+select count(id) from diagrams where owner_id=md5('owner1')::uuid;
+Aggregate  (cost=980.08..980.09 rows=1 width=8) (actual time=2.901..2.902 rows=1 loops=1)
+  Buffers: shared hit=146
+  ->  Index Only Scan using idx_diagrams_owner_updated_id on diagrams  (cost=0.42..930.12 rows=19983 width=16) (actual time=0.009..1.805 rows=20000 loops=1)
+        Index Cond: (owner_id = '4ef5ba0c-918c-537f-adba-2ada54e3dd68'::uuid)
+        Heap Fetches: 0
+        Buffers: shared hit=146
+Settings: search_path = 'diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4, public'
+Planning Time: 0.081 ms
+Execution Time: 2.914 ms

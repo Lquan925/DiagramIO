@@ -1,0 +1,22 @@
+Measured at UTC: 2026-11-24T08:38:37.405323200Z
+OS: Windows 11 10.0 amd64
+Java: 21.0.8; JVM visible processors: 18
+Rows: 100000; owner count: 100; heavy owner: first 20%; public: 10%; payload: 8192 ASCII characters in each node; page size: 20
+Warmup: 10 full sequences per scenario/phase; samples: 30; one sequential JDBC connection; warm cache; times include fetching all result columns but exclude connection acquisition and HTTP.
+PostgreSQL: PostgreSQL 16.4, compiled by Visual C++ build 1940, 64-bit
+shared_buffers: 128MB
+work_mem: 4MB
+effective_cache_size: 4GB
+max_parallel_workers_per_gather: 2
+jit: on
+Seed seconds: 39.3496512
+Baseline relation bytes: 883769344
+Mean JSON text bytes: 8245.8889500000000000
+V4 migration seconds: 0.885916
+Optimized relation bytes: 898293760
+diagrams_pkey: CREATE UNIQUE INDEX diagrams_pkey ON diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4.diagrams USING btree (id)
+idx_diagrams_owner_type_updated_id: CREATE INDEX idx_diagrams_owner_type_updated_id ON diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4.diagrams USING btree (owner_id, diagram_type, updated_at DESC, id DESC)
+idx_diagrams_owner_updated_id: CREATE INDEX idx_diagrams_owner_updated_id ON diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4.diagrams USING btree (owner_id, updated_at DESC, id DESC)
+idx_diagrams_public_updated_id: CREATE INDEX idx_diagrams_public_updated_id ON diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4.diagrams USING btree (updated_at DESC, id DESC) WHERE (is_public = true)
+idx_diagrams_title_upper_trgm: CREATE INDEX idx_diagrams_title_upper_trgm ON diagram_listing_benchmark_0b9826db7d3f43fdbbf8882d485a3fc4.diagrams USING gin (upper((title)::text) gin_trgm_ops)
+Validated: ordered metadata IDs and exact total counts match before/after for every scenario.
