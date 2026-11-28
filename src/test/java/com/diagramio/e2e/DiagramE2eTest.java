@@ -792,4 +792,24 @@ class DiagramE2eTest extends E2eTestBase {
         assertStatusIn(get(API + "/shares/" + token).send(), 404, 410);
         assertError(get(API + "/diagrams/" + id + "/versions").bearer(a.accessToken()).send(), 404);
     }
+
+    @Test
+    void unicodeDataAtUtf8LimitIsAcceptedAndOneByteOverRejected() throws Exception {
+        Actor owner = registerAndLogin();
+        String id = createDiagramId(owner);
+        String prefix = "{\"nodes\":[],\"edges\":[],\"label\":\"";
+        String suffix = "\"}";
+        for (int delta : new int[]{-1, 0, 1}) {
+            int target = com.diagramio.domain.diagram.DiagramData.MAX_BYTES + delta;
+            int count = target - (prefix + suffix).getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            String raw = prefix + "ệ".repeat(count / 3) + "x".repeat(count % 3) + suffix;
+            assertThat(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8)).hasSize(target);
+            JsonNode before = getDiagram(owner, id);
+            Res response = updateDiagram(owner, id, "UTF8 limit", "UML", before.path("version").asInt(), parse(raw), false);
+            assertStatus(response, delta <= 0 ? 200 : 400);
+            JsonNode after = getDiagram(owner, id);
+            assertThat(after.path("data")).isEqualTo(delta <= 0 ? parse(raw) : before.path("data"));
+            if (delta > 0) assertThat(after.path("version")).isEqualTo(before.path("version"));
+        }
+    }
 }

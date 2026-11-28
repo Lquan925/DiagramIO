@@ -14,6 +14,10 @@ spring:
     enabled: true
 
 server:
+  compression:
+    enabled: ${SERVER_COMPRESSION_ENABLED:true}
+    mime-types: application/json
+    min-response-size: ${SERVER_COMPRESSION_MIN_RESPONSE_SIZE:2KB}
   # Sau proxy/load balancer: dùng X-Forwarded-Host/Proto để ghép đúng địa chỉ bên ngoài (vd. shareUrl)
   forward-headers-strategy: framework
 

@@ -74,7 +74,7 @@ class DiagramVersionControllerTest {
         mockMvc.perform(post(base)).andExpect(status().isUnauthorized());
         mockMvc.perform(get(base + "/" + versionId)).andExpect(status().isUnauthorized());
         mockMvc.perform(post(base + "/" + versionId + "/restore")).andExpect(status().isUnauthorized());
-        verify(versionService, never()).listVersions(any(), any());
+        verify(versionService, never()).listVersions(any(), any(), org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     // ---------- POST /versions ----------
@@ -161,15 +161,16 @@ class DiagramVersionControllerTest {
 
     @Test
     void listReturnsSummariesWithoutData() throws Exception {
-        when(versionService.listVersions(diagramId, Caller.user(ownerId)))
-                .thenReturn(List.of(version(UUID.randomUUID(), 2), version(versionId, 1)));
+        when(versionService.listVersions(diagramId, Caller.user(ownerId), 0, 10))
+                .thenReturn(new com.diagramio.domain.version.VersionHistoryPage(List.of(com.diagramio.domain.version.DiagramVersionSummary.from(version(UUID.randomUUID(), 2)), com.diagramio.domain.version.DiagramVersionSummary.from(version(versionId, 1))), 0, 10, 2));
 
         mockMvc.perform(get(base).with(user(ownerId.toString())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].versionNumber").value(2))
-                .andExpect(jsonPath("$[1].id").value(versionId.toString()))
-                .andExpect(jsonPath("$[0].data").doesNotExist());
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].versionNumber").value(2))
+                .andExpect(jsonPath("$.content[1].id").value(versionId.toString()))
+                .andExpect(jsonPath("$.content[0].data").doesNotExist());
     }
 
     @Test

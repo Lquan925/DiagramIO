@@ -1,5 +1,7 @@
 package com.diagramio.infrastructure.version;
 
+import com.diagramio.domain.version.DiagramVersionSummary;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,7 +11,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface DiagramVersionJpaRepository extends JpaRepository<DiagramVersionEntity, UUID> {
 
-    List<DiagramVersionEntity> findByDiagramIdOrderByVersionNumberDesc(UUID diagramId);
+    @Query("""
+            select new com.diagramio.domain.version.DiagramVersionSummary(
+                v.id, v.versionNumber, v.note, v.createdBy, v.createdAt)
+            from DiagramVersionEntity v
+            where v.diagramId = :diagramId
+            order by v.versionNumber desc
+            """)
+    List<DiagramVersionSummary> findByDiagramIdOrderByVersionNumberDesc(@Param("diagramId") UUID diagramId, Pageable pageable);
+
+    long countByDiagramId(UUID diagramId);
 
     Optional<DiagramVersionEntity> findByIdAndDiagramId(UUID id, UUID diagramId);
 

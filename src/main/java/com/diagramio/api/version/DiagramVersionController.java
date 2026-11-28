@@ -1,6 +1,7 @@
 package com.diagramio.api.version;
 
 import com.diagramio.api.dto.ErrorResponse;
+import com.diagramio.api.dto.PageResponse;
 import com.diagramio.api.version.dto.CreateVersionRequest;
 import com.diagramio.api.version.dto.DiagramVersionResponse;
 import com.diagramio.api.version.dto.DiagramVersionSummaryResponse;
@@ -9,13 +10,13 @@ import com.diagramio.domain.access.Caller;
 import com.diagramio.domain.version.DiagramVersion;
 import com.diagramio.domain.version.DiagramVersionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -44,13 +46,23 @@ public class DiagramVersionController {
     }
 
     @GetMapping
-    @Operation(summary = "Danh sách phiên bản đã lưu (mới nhất trước)",
-            description = "Owner hoặc người có link chia sẻ view/edit.")
-    @ApiResponse(responseCode = "200", description = "Danh sách phiên bản")
-    public List<DiagramVersionSummaryResponse> list(@PathVariable("id") UUID diagramId, Caller caller) {
-        return versionService.listVersions(diagramId, caller).stream()
-                .map(DiagramVersionSummaryResponse::from)
-                .toList();
+    @Operation(summary = "Lịch sử phiên bản có phân trang (mới nhất trước)",
+            description = "Owner hoặc link view/edit. page bắt đầu từ 0, size 1..100. "
+                    + "Response đổi từ array sang PageResponse. Ví dụ: /api/v1/diagrams/{id}/versions?page=0&size=10. "
+                    + "Phiên bản mới có thể dịch chuyển ranh giới giữa các request.")
+    @ApiResponse(responseCode = "200", description = "Trang metadata, không kèm snapshot data; trang vượt dữ liệu có content rỗng")
+    @ApiResponse(responseCode = "400", description = "page âm, size ngoài 1..100 hoặc tham số sai kiểu",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    public PageResponse<DiagramVersionSummaryResponse> list(
+            @PathVariable("id") UUID diagramId, Caller caller,
+            @Parameter(description = "Trang từ 0", schema = @Schema(minimum = "0", defaultValue = "0"))
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số mục mỗi trang", schema = @Schema(minimum = "1", maximum = "100", defaultValue = "10"))
+            @RequestParam(defaultValue = "10") int size) {
+        var result = versionService.listVersions(diagramId, caller, page, size);
+        int totalPages = (int) (result.totalElements() / size + (result.totalElements() % size == 0 ? 0 : 1));
+        return new PageResponse<>(result.content().stream()
+                .map(DiagramVersionSummaryResponse::from).toList(), page, size, result.totalElements(), totalPages);
     }
 
     @PostMapping

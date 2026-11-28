@@ -632,7 +632,7 @@ paths:
       - Diagram Sharing
   /api/v1/diagrams/{id}/versions:
     get:
-      description: Owner hoặc người có link chia sẻ view/edit.
+      description: "Owner hoặc link view/edit. Response đổi từ array sang PageResponse. Ví dụ /api/v1/diagrams/{id}/versions?page=0&size=10. Ghi đồng thời có thể dịch chuyển trang."
       operationId: list
       parameters:
       - in: path
@@ -641,14 +641,33 @@ paths:
         schema:
           type: string
           format: uuid
+      - in: query
+        name: page
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+      - in: query
+        name: size
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          default: 10
       responses:
+        "400":
+          description: Tham số sai kiểu hoặc ngoài giới hạn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DiagramVersionSummaryResponse"
+                $ref: "#/components/schemas/PageResponseDiagramVersionSummaryResponse"
           description: Danh sách phiên bản
         "401":
           content:
@@ -1289,6 +1308,27 @@ components:
           format: uuid
         username:
           type: string
+
+    PageResponseDiagramVersionSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiagramVersionSummaryResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+
   securitySchemes:
     bearerAuth:
       bearerFormat: JWT

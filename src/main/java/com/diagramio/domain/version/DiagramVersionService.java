@@ -40,9 +40,15 @@ public class DiagramVersionService {
         this.clock = clock;
     }
 
-    public List<DiagramVersion> listVersions(UUID diagramId, Caller caller) {
+    public VersionHistoryPage listVersions(UUID diagramId, Caller caller, int page, int size) {
         access.require(diagramId, caller, Permission.VIEW_HISTORY);
-        return versionRepository.findByDiagramId(diagramId);
+        if (page < 0 || size < 1 || size > 100) {
+            throw new InvalidInputException("page must be >= 0 and size must be between 1 and 100");
+        }
+        long total = versionRepository.countByDiagramId(diagramId);
+        var content = (long) page * size >= total ? List.<DiagramVersionSummary>of()
+                : versionRepository.findByDiagramId(diagramId, page, size);
+        return new VersionHistoryPage(content, page, size, total);
     }
 
     public DiagramVersion getVersion(UUID diagramId, UUID versionId, Caller caller) {

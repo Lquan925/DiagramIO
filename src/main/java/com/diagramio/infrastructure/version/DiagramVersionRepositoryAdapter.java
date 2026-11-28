@@ -2,9 +2,11 @@ package com.diagramio.infrastructure.version;
 
 import com.diagramio.domain.exception.ConflictException;
 import com.diagramio.domain.version.DiagramVersion;
+import com.diagramio.domain.version.DiagramVersionSummary;
 import com.diagramio.domain.version.DiagramVersionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,10 +47,14 @@ public class DiagramVersionRepositoryAdapter implements DiagramVersionRepository
     }
 
     @Override
-    public List<DiagramVersion> findByDiagramId(UUID diagramId) {
-        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId).stream()
-                .map(DiagramVersionEntity::toDomain)
-                .toList();
+    public List<DiagramVersionSummary> findByDiagramId(UUID diagramId, int page, int size) {
+        return jpaRepository.findByDiagramIdOrderByVersionNumberDesc(diagramId,
+                PageRequest.of(page, size));
+    }
+
+    @Override
+    public long countByDiagramId(UUID diagramId) {
+        return jpaRepository.countByDiagramId(diagramId);
     }
 
     @Override
